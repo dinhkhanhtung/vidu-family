@@ -1,3 +1,4 @@
+"use client"
 import { signIn } from "next-auth/react"
 import { useState } from "react"
 import Link from "next/link"
@@ -11,8 +12,8 @@ export default function SignInPage() {
     setLoading(true)
     try {
       await signIn("google")
-    } catch (error: any) {
-      setMessage(error.message || "Đăng nhập thất bại")
+    } catch (error: unknown) {
+      setMessage((error as { message: string } | undefined)?.message || "Đăng nhập thất bại")
       setLoading(false)
     }
   }
@@ -32,8 +33,8 @@ export default function SignInPage() {
       } else {
         setMessage("Gửi liên kết thất bại. Vui lòng thử lại.")
       }
-    } catch (error: any) {
-      setMessage(error.message || "Gửi liên kết thất bại")
+    } catch (error: unknown) {
+      setMessage((error as { message: string } | undefined)?.message || "Gửi liên kết thất bại")
     } finally {
       setLoading(false)
     }

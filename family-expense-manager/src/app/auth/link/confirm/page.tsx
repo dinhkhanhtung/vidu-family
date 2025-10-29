@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
-import { verifyPendingLink } from "@/lib/auth"
 
 export default function ConfirmLinkPage() {
   const searchParams = useSearchParams()
@@ -20,13 +19,22 @@ export default function ConfirmLinkPage() {
 
     const confirm = async () => {
       try {
-        const user = await verifyPendingLink(token)
-        if (user) {
+        const response = await fetch('/api/auth/link/confirm', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        })
+
+        const data = await response.json()
+
+        if (response.ok && data.success) {
           setStatus("success")
           setMessage("Tài khoản đã được liên kết thành công! Bạn có thể đăng nhập bằng tài khoản Google.")
         } else {
           setStatus("expired")
-          setMessage("Liên kết đã hết hạn hoặc không hợp lệ.")
+          setMessage(data.error || "Liên kết đã hết hạn hoặc không hợp lệ.")
         }
       } catch (error) {
         console.error("Confirmation error:", error)
