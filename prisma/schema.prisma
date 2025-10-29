@@ -1,0 +1,343 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// NextAuth.js required tables
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  adminRole     AdminRole @default(MODERATOR)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  workspaces    WorkspaceMember[]
+  ownedWorkspaces Workspace[]
+  subscriptions Subscription[] @relation("SubscriptionUser")
+  ownedSubscriptions Subscription[] @relation("UserOwnedSubscriptions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Application specific tables
+model Workspace {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner     User              @relation(fields: [ownerId], references: [id])
+  members   WorkspaceMember[]
+  categories Category[]
+  accounts  FinancialAccount[]
+  transactions Transaction[]
+  budgets   Budget[]
+  savingsGoals SavingsGoal[]
+  subscriptions Subscription[]
+}
+
+model WorkspaceMember {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        Role     @default(MEMBER)
+  invitedAt   DateTime @default(now())
+  joinedAt    DateTime?
+
+  user      User      @relation(fields: [userId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  color       String?
+  icon        String?
+  type        CategoryType
+  workspaceId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  budgets      Budget[]
+
+  @@unique([name, workspaceId])
+}
+
+model FinancialAccount {
+  id          String   @id @default(cuid())
+  name        String
+  type        AccountType
+  balance     Float    @default(0)
+  currency    String   @default("VND")
+  isActive    Boolean  @default(true)
+  workspaceId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id])
+  transactions Transaction[]
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  amount      Float
+  description String?
+  notes       String?
+  date        DateTime @default(now())
+  type        TransactionType
+  categoryId  String
+  accountId   String
+  workspaceId String
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category  Category  @relation(fields: [categoryId], references: [id])
+  account   FinancialAccount   @relation(fields: [accountId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+}
+
+// Budget System - Premium Feature
+model Budget {
+  id          String   @id @default(cuid())
+  name        String
+  amount      Float
+  spent       Float    @default(0)
+  categoryId  String?
+  workspaceId String
+  period      BudgetPeriod
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  alert80     Boolean  @default(false)
+  alert90     Boolean  @default(false)
+  alert100    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  category  Category?  @relation(fields: [categoryId], references: [id])
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  alerts    BudgetAlert[]
+
+  @@unique([categoryId, workspaceId, period, startDate])
+}
+
+model BudgetAlert {
+  id        String   @id @default(cuid())
+  budgetId  String
+  type      BudgetAlertType
+  threshold Float
+  triggered Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  budget Budget @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+}
+
+// Savings Goals - Premium Feature
+model SavingsGoal {
+  id              String   @id @default(cuid())
+  name            String
+  targetAmount    Float
+  currentAmount   Float    @default(0)
+  targetDate      DateTime
+  description     String?
+  isActive        Boolean  @default(true)
+  isCompleted     Boolean  @default(false)
+  completedAt     DateTime?
+  workspaceId     String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  contributions SavingsContribution[]
+}
+
+model SavingsContribution {
+  id            String   @id @default(cuid())
+  amount        Float
+  date          DateTime @default(now())
+  description   String?
+  goalId        String
+  createdAt     DateTime @default(now())
+
+  goal SavingsGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+}
+
+// Subscription models
+model Plan {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  price       Float
+  currency    String   @default("USD")
+  interval    String   @default("month") // month, year
+  maxMembers  Int
+  features    Json?    // Store plan features as JSON
+  stripePriceId String? @unique
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id                String   @id @default(cuid())
+  userId            String
+  workspaceId       String
+  planId            String
+  stripeSubscriptionId String? @unique
+  stripeCustomerId  String?
+  status            SubscriptionStatus @default(TRIALING)
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  trialEnd          DateTime?
+  cancelAtPeriodEnd Boolean   @default(false)
+  cancelledAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user      User      @relation("SubscriptionUser", fields: [userId], references: [id], map: "Subscription_user_fkey")
+  owner     User      @relation("UserOwnedSubscriptions", fields: [userId], references: [id], map: "Subscription_owner_fkey")
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  plan      Plan      @relation(fields: [planId], references: [id])
+  invoices  Invoice[]
+}
+
+model Invoice {
+  id                String   @id @default(cuid())
+  subscriptionId    String
+  stripeInvoiceId   String?  @unique
+  amount            Float
+  currency          String   @default("USD")
+  status            InvoiceStatus @default(DRAFT)
+  invoicePdf        String?  // URL to PDF
+  hostedInvoiceUrl  String?  // Stripe hosted invoice URL
+  invoiceNumber     String?
+  billingReason     String?
+  dueDate           DateTime?
+  paidAt            DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+}
+
+// Enums
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+enum AccountType {
+  CASH
+  BANK_ACCOUNT
+  CREDIT_CARD
+  E_WALLET
+  INVESTMENT
+  OTHER
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  VOID
+  UNCOLLECTIBLE
+}
+
+enum BudgetPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum BudgetAlertType {
+  PERCENTAGE_80
+  PERCENTAGE_90
+  PERCENTAGE_100
+}
