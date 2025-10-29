@@ -1,6 +1,3 @@
 {
-  "framework": "nextjs",
-  "buildCommand": "cd family-expense-manager && npm run build",
-  "installCommand": "cd family-expense-manager && npm install",
-  "devCommand": "cd family-expense-manager && npm run dev"
+  "rootDirectory": "family-expense-manager"
 }
