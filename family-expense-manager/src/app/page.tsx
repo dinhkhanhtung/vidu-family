@@ -1,15 +1,193 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { ArrowRight, Wallet, TrendingUp, Users, Shield, Smartphone } from 'lucide-react'
+import { ArrowRight, Wallet, TrendingUp, Users, Shield, Smartphone, DollarSign, Target, PiggyBank, Plus } from 'lucide-react'
+import { format } from 'date-fns'
+import { vi } from 'date-fns/locale'
+import { Transaction } from '@/types/transaction'
+
+// Dashboard component for authenticated users
+function Dashboard() {
+  const { data: session } = useSession()
+  const [recentTransactions, setRecentTransactions] = useState<(Transaction & { category: { name: string; color: string } })[]>([])
+  const [stats, setStats] = useState({
+    totalIncome: 0,
+    totalExpense: 0,
+    balance: 0,
+  })
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      loadDashboardData()
+    }
+  }, [session])
+
+  const loadDashboardData = async () => {
+    try {
+      // For now, show demo data or empty state
+      // TODO: Implement proper API endpoints for dashboard data
+      setRecentTransactions([])
+      setStats({
+        totalIncome: 0,
+        totalExpense: 0,
+        balance: 0,
+      })
+    } catch (error) {
+      console.error('Error loading dashboard data:', error)
+    }
+  }
+
+  return (
+    <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">
+          Chào mừng, {session?.user?.name || 'Bạn'}!
+        </h1>
+        <p className="text-gray-600 mt-2">Tổng quan tài chính gia đình của bạn</p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Thu nhập tháng này</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              +{stats.totalIncome.toLocaleString('vi-VN')} ₫
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Chi tiêu tháng này</CardTitle>
+            <DollarSign className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              -{stats.totalExpense.toLocaleString('vi-VN')} ₫
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Số dư</CardTitle>
+            <Wallet className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${stats.balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {stats.balance.toLocaleString('vi-VN')} ₫
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Thao tác nhanh</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Button asChild className="h-20 flex-col gap-2">
+              <Link href="/transactions">
+                <Plus className="h-6 w-6" />
+                Thêm giao dịch
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-20 flex-col gap-2">
+              <Link href="/budgets">
+                <Target className="h-6 w-6" />
+                Quản lý ngân sách
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-20 flex-col gap-2">
+              <Link href="/savings-goals">
+                <PiggyBank className="h-6 w-6" />
+                Mục tiêu tiết kiệm
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="h-20 flex-col gap-2">
+              <Link href="/billing">
+                <TrendingUp className="h-6 w-6" />
+                Nâng cấp
+              </Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Recent Transactions */}
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle>Giao dịch gần đây</CardTitle>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/transactions">Xem tất cả</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {recentTransactions.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              Chưa có giao dịch nào. <Link href="/transactions" className="text-blue-600">Thêm giao dịch đầu tiên</Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentTransactions.map(transaction => (
+                <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: transaction.category?.color || '#6B7280' }}
+                    />
+                    <div>
+                      <div className="font-medium">{transaction.category?.name}</div>
+                      <div className="text-sm text-gray-600">{transaction.description}</div>
+                      <div className="text-sm text-gray-500">
+                        {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: vi })}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`font-bold ${
+                    transaction.type === 'INCOME' ? 'text-green-600' :
+                    transaction.type === 'EXPENSE' ? 'text-red-600' : 'text-blue-600'
+                  }`}>
+                    {transaction.type === 'INCOME' ? '+' : transaction.type === 'EXPENSE' ? '-' : ''}
+                    {transaction.amount?.toLocaleString('vi-VN')} ₫
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
 
 export default function Home() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
 
+  // Show loading state while checking authentication
+  if (status === 'loading') {
+    return <div className="min-h-screen flex items-center justify-center">Đang tải...</div>
+  }
+
+  // Show dashboard if user is authenticated
+  if (session) {
+    return <Dashboard />
+  }
+
+  // Show landing page if user is not authenticated
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -20,25 +198,12 @@ export default function Home() {
             <span className="text-2xl font-bold text-gray-900">Vidu Family</span>
           </div>
           <div className="flex gap-4">
-            {session ? (
-              <div className="flex gap-4">
-                <Button asChild variant="outline">
-                  <Link href="/transactions">Quản lý giao dịch</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/budgets">Ngân sách</Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="flex gap-4">
-                <Button asChild variant="outline">
-                  <Link href="/auth/signin">Đăng nhập</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/pricing">Bắt đầu miễn phí</Link>
-                </Button>
-              </div>
-            )}
+            <Button asChild variant="outline">
+              <Link href="/auth/signin">Đăng nhập</Link>
+            </Button>
+            <Button asChild>
+              <Link href="/pricing">Bắt đầu miễn phí</Link>
+            </Button>
           </div>
         </div>
       </header>

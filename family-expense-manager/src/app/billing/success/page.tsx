@@ -140,7 +140,7 @@ export default function BillingSuccessPage() {
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push('/')}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
               >
                 Go to Dashboard
