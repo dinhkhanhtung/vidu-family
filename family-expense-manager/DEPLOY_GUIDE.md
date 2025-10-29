@@ -1,4 +1,5 @@
 # 🚀 Hướng Dẫn Triển Khai Production - Family Expense Manager
+# 🚀 Hướng Dẫn Triển Khai Production - Family Expense Manager
 
 Hướng dẫn đầy đủ để triển khai ứng dụng Family Expense Manager lên môi trường production và sẵn sàng cho kinh doanh.
 
@@ -10,6 +11,47 @@ Hướng dẫn đầy đủ để triển khai ứng dụng Family Expense Manag
 - **Caching**: Redis
 - **Reverse Proxy**: Nginx
 - **Container**: Docker & Docker Compose
+## 🔧 Giải Pháp Lỗi Vercel Build
+
+### Vấn Đề Peer Dependency Conflicts
+
+Khi triển khai lên Vercel, bạn có thể gặp lỗi:
+```
+npm warn ERESOLVE overriding peer dependency
+npm warn peerOptional nodemailer@"^6.8.0" from @auth/core@0.29.0
+```
+
+### Giải Pháp 1: Sử dụng .npmrc
+
+Tạo file `.npmrc` trong root project:
+```bash
+legacy-peer-deps=true
+```
+
+### Giải Pháp 2: Cấu Hình Vercel Build Command
+
+Trong dashboard Vercel, cấu hình:
+- **Build Command**: `npm install --legacy-peer-deps && npm run build`
+- **Install Command**: `npm install --legacy-peer-deps`
+
+### Giải Pháp 3: Package.json Override (Khuyến nghị)
+
+Thêm vào `package.json`:
+```json
+{
+  "overrides": {
+    "nodemailer": "^7.0.7"
+  }
+}
+```
+
+### Lưu Ý Quan Trọng
+
+- Đã fix trong package.json: `nodemailer: "^7.0.7"` và `react: "18.3.1"`
+- File `.npmrc` đã được tạo: `legacy-peer-deps=true`
+- Build với `npm install --legacy-peer-deps` sẽ hoạt động ổn định
+
+---
 - **Host**: VPS (AWS EC2, DigitalOcean, Vultr, etc.)
 
 ## 🔧 Yêu Cầu Hệ Thống
