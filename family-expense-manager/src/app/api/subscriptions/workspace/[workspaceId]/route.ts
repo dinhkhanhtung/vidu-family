@@ -5,7 +5,7 @@ import { getSubscriptionByWorkspace } from '@/lib/subscriptions'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { workspaceId: string } }
+  { params }: any
 ) {
   try {
     const session = await getServerSession(authOptions)

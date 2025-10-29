@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import * as z from 'zod'
 
 const updateTransactionSchema = z.object({
@@ -16,7 +17,7 @@ const updateTransactionSchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -24,7 +25,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const transaction = await prisma.transaction.findUnique({
+    const transaction = await (prisma as any).transaction.findUnique({
       where: { id: params.id },
       include: {
         category: true,
@@ -61,7 +62,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -73,11 +74,11 @@ export async function PUT(
     const validatedData = updateTransactionSchema.parse(body)
 
     // Get current transaction to check authorization and calculate balance changes
-    const currentTransaction = await prisma.transaction.findUnique({
+    const currentTransaction = await (prisma as any).transaction.findUnique({
       where: { id: params.id },
       select: {
         id: true,
-        amount: true,
+        encryptedAmount: true,
         type: true,
         accountId: true,
         workspaceId: true,
@@ -105,20 +106,20 @@ export async function PUT(
     }
 
     // Start a transaction to update balances correctly
-    const updatedTransaction = await prisma.$transaction(async (tx) => {
+  const updatedTransaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // If amount or type or account changed, we need to reverse the old transaction and apply new one
-      const amount = validatedData.amount || (currentTransaction as any).amount
+  const amount = typeof validatedData.amount !== 'undefined' ? validatedData.amount : Number((currentTransaction as any).encryptedAmount)
       const type = validatedData.type || currentTransaction.type
       const accountId = validatedData.accountId || currentTransaction.accountId
 
       // Reverse old transaction balance impact
       if (currentTransaction.type !== 'TRANSFER') {
         const oldMultiplier = currentTransaction.type === 'INCOME' ? -1 : 1
-        await tx.financialAccount.update({
+  await (tx as any).financialAccount.update({
           where: { id: currentTransaction.accountId },
           data: {
             balance: {
-              increment: (currentTransaction as any).amount * oldMultiplier,
+              increment: Number((currentTransaction as any).encryptedAmount) * oldMultiplier,
             },
           },
         })
@@ -127,7 +128,7 @@ export async function PUT(
       // Apply new transaction balance impact
       if (type !== 'TRANSFER') {
         const newMultiplier = type === 'INCOME' ? 1 : -1
-        await tx.financialAccount.update({
+  await (tx as any).financialAccount.update({
           where: { id: accountId },
           data: {
             balance: {
@@ -138,11 +139,17 @@ export async function PUT(
       }
 
       // Update the transaction
-      return await tx.transaction.update({
+  return await (tx as any).transaction.update({
         where: { id: params.id },
         data: {
-          ...validatedData,
+          // map amount -> encryptedAmount if present
+          ...(typeof validatedData.amount !== 'undefined' ? { encryptedAmount: String(validatedData.amount) } : {}),
+          description: validatedData.description,
+          notes: validatedData.notes,
           ...(validatedData.date && { date: new Date(validatedData.date) }),
+          ...(validatedData.type && { type: validatedData.type }),
+          ...(validatedData.categoryId && { categoryId: validatedData.categoryId }),
+          ...(validatedData.accountId && { accountId: validatedData.accountId }),
         },
         include: {
           category: true,
@@ -151,7 +158,10 @@ export async function PUT(
       })
     })
 
-    return NextResponse.json(updatedTransaction)
+    // map encryptedAmount back to amount
+    const mapTransaction = (t: any) => ({ ...t, amount: typeof t.encryptedAmount !== 'undefined' ? Number(t.encryptedAmount) : (t as any).amount })
+
+    return NextResponse.json(mapTransaction(updatedTransaction))
   } catch (error) {
     console.error('Error updating transaction:', error)
     return NextResponse.json(
@@ -163,7 +173,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: any
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -172,7 +182,7 @@ export async function DELETE(
     }
 
     // Get current transaction
-    const currentTransaction = await prisma.transaction.findUnique({
+    const currentTransaction = await (prisma as any).transaction.findUnique({
       where: { id: params.id },
       include: { workspace: true },
     })
@@ -196,18 +206,18 @@ export async function DELETE(
     // Reverse the balance impact when deleting
     if (currentTransaction.type !== 'TRANSFER') {
       const multiplier = currentTransaction.type === 'INCOME' ? -1 : 1
-      await prisma.financialAccount.update({
+      await (prisma as any).financialAccount.update({
         where: { id: currentTransaction.accountId },
         data: {
           balance: {
-            increment: (currentTransaction as any).amount * multiplier,
+            increment: Number((currentTransaction as any).encryptedAmount) * multiplier,
           },
         },
       })
     }
 
     // Delete the transaction
-    await prisma.transaction.delete({
+    await (prisma as any).transaction.delete({
       where: { id: params.id },
     })
 

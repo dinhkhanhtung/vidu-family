@@ -158,7 +158,7 @@ export default function TransactionsPage() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Giao dịch</h1>
 
-        <Dialog open={isFormOpen || !!editingTransaction} onOpenChange={(open) => {
+        <Dialog open={isFormOpen || !!editingTransaction} onOpenChange={(open: boolean) => {
           setIsFormOpen(open)
           if (!open) setEditingTransaction(undefined)
         }}>
@@ -182,7 +182,15 @@ export default function TransactionsPage() {
                 setIsFormOpen(false)
                 setEditingTransaction(undefined)
               }}
-              initialData={editingTransaction}
+              initialData={editingTransaction ? {
+                amount: (editingTransaction as any).amount ?? (editingTransaction as any).encryptedAmount ? Number((editingTransaction as any).encryptedAmount) : 0,
+                description: editingTransaction.description ?? '',
+                notes: (editingTransaction as any).notes ?? '',
+                date: editingTransaction.date ? new Date(editingTransaction.date as any) : new Date(),
+                type: editingTransaction.type ?? 'EXPENSE',
+                categoryId: editingTransaction.categoryId ?? '',
+                accountId: editingTransaction.accountId ?? '',
+              } : undefined}
             />
           </DialogContent>
         </Dialog>
@@ -198,7 +206,7 @@ export default function TransactionsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <Select value={filters.type} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}>
+            <Select value={filters.type} onValueChange={(value: string) => setFilters(prev => ({ ...prev, type: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Loại giao dịch" />
               </SelectTrigger>
@@ -210,7 +218,7 @@ export default function TransactionsPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.categoryId} onValueChange={(value) => setFilters(prev => ({ ...prev, categoryId: value }))}>
+            <Select value={filters.categoryId} onValueChange={(value: string) => setFilters(prev => ({ ...prev, categoryId: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Danh mục" />
               </SelectTrigger>
@@ -224,7 +232,7 @@ export default function TransactionsPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.accountId} onValueChange={(value) => setFilters(prev => ({ ...prev, accountId: value }))}>
+            <Select value={filters.accountId} onValueChange={(value: string) => setFilters(prev => ({ ...prev, accountId: value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Tài khoản" />
               </SelectTrigger>

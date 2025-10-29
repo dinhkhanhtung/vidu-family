@@ -1,85 +1,28 @@
 {
   "name": "Family Expense Manager",
-  "short_name": "ExpenseApp",
-  "description": "Ứng dụng quản lý chi tiêu gia đình thông minh",
+  "short_name": "FEM",
+  "description": "Quản lý chi tiêu gia đình thông minh",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
-  "categories": ["finance", "productivity", "utilities"],
-  "lang": "vi",
-  "dir": "ltr",
   "scope": "/",
   "icons": [
     {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icon-256x256.png",
-      "sizes": "256x256",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "maskable any"
+      "purpose": "any maskable"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/screenshot-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Thêm giao dịch",
-      "short_name": "Thêm giao dịch",
-      "description": "Thêm giao dịch mới nhanh chóng",
-      "url": "/transactions/new",
-      "icons": [
-        {
-          "src": "/shortcut-add.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Xem báo cáo",
-      "short_name": "Báo cáo",
-      "description": "Xem báo cáo tài chính",
-      "url": "/reports",
-      "icons": [
-        {
-          "src": "/shortcut-report.png",
-          "sizes": "96x96"
-        }
-      ]
-    }
-  ],
-  "related_applications": [],
-  "prefer_related_applications": false,
-  "edge_side_panel": {
-    "preferred_width": 400
-  }
+  "categories": ["finance", "productivity", "utilities"],
+  "lang": "vi-VN",
+  "dir": "ltr"
 }

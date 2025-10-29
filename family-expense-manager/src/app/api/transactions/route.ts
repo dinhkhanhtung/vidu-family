@@ -40,9 +40,15 @@ export async function POST(request: NextRequest) {
     // Create transaction
     const transaction = await prisma.transaction.create({
       data: {
-        ...validatedData,
+        amount: validatedData.amount, // Store as number directly
+        description: validatedData.description,
+        notes: validatedData.notes,
         date: new Date(validatedData.date),
-        createdBy: session.user.id,
+        type: validatedData.type,
+        categoryId: validatedData.categoryId,
+        accountId: validatedData.accountId,
+        userId: session.user.id,
+        workspaceId: validatedData.workspaceId,
       },
       include: {
         category: true,
@@ -123,7 +129,7 @@ export async function GET(request: NextRequest) {
     }
 
     const [transactions, total] = await Promise.all([
-      prisma.transaction.findMany({
+      (prisma as any).transaction.findMany({
         where: filters,
         include: {
           category: true,
@@ -133,11 +139,16 @@ export async function GET(request: NextRequest) {
         skip,
         take: limit,
       }),
-      prisma.transaction.count({ where: filters }),
+      (prisma as any).transaction.count({ where: filters }),
     ])
 
+    const mapTransaction = (t: any) => ({
+      ...t,
+      amount: typeof t.encryptedAmount !== 'undefined' ? Number(t.encryptedAmount) : (t as any).amount,
+    })
+
     return NextResponse.json({
-      transactions,
+      transactions: (transactions as any[]).map(mapTransaction),
       pagination: {
         page,
         limit,
