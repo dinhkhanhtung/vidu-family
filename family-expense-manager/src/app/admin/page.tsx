@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Users, DollarSign, TrendingUp, Activity } from "lucide-react"
-import { AnalyticsOverview } from "@/components/admin/AnalyticsOverview"
 import { UserGrowthChart } from "@/components/admin/UserGrowthChart"
 import { RevenueChart } from "@/components/admin/RevenueChart"
 import { ConversionChart } from "@/components/admin/ConversionChart"
