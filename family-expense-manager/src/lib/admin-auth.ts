@@ -19,7 +19,7 @@ export async function getAdminSession() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, email: true, name: true, adminRole: true, isActive: true }
+    select: { id: true, email: true, name: true, role: true, isActive: true }
   })
 
   if (!user || !user.isActive) {
@@ -31,7 +31,9 @@ export async function getAdminSession() {
       id: user.id,
       email: user.email,
       name: user.name,
-      adminRole: user.adminRole as AdminRole,
+      adminRole: user.role === 'SUPER_ADMIN' ? AdminRole.SUPER_ADMIN :
+                user.role === 'ADMIN' ? AdminRole.ADMIN :
+                AdminRole.MODERATOR,
     }
   }
 }

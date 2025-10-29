@@ -1,5 +1,5 @@
 import { Subscription } from '@prisma/client'
-import { PLANS } from './subscriptions'
+import { FEATURES } from './subscriptions'
 
 export type FeatureFlag =
   | 'unlimitedTransactions'
@@ -27,7 +27,7 @@ export class FeatureFlags {
   hasFeature(feature: FeatureFlag): boolean {
     if (!this.subscription || !this.subscription.plan?.features) {
       // Free plan features
-      return PLANS.FREE.features[feature]
+      return FEATURES.FREE.features[feature]
     }
 
     return (this.subscription.plan?.features as any)?.[feature] || false
@@ -38,10 +38,10 @@ export class FeatureFlags {
    */
   getMaxMembers(): number {
     if (!this.subscription) {
-      return PLANS.FREE.maxMembers
+      return 1 // Free plan max members
     }
 
-    return this.subscription.plan?.maxMembers || PLANS.FREE.maxMembers
+    return this.subscription.plan?.maxMembers || 1
   }
 
   /**

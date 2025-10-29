@@ -37,13 +37,6 @@ export async function findOrCreateUserByEmail({
   })
 
   if (user) {
-    if (googleId && !user.googleId) {
-      // Link Google account
-      user = await prisma.user.update({
-        where: { id: user.id },
-        data: { googleId }
-      })
-    }
     return user
   }
 
@@ -53,7 +46,6 @@ export async function findOrCreateUserByEmail({
       email,
       name,
       image,
-      googleId,
       emailVerified: googleId ? new Date() : null
     }
   })
@@ -61,41 +53,15 @@ export async function findOrCreateUserByEmail({
   return user
 }
 
+// Simplified - removing pending link functionality for now
 export async function createPendingLink(userId: string, googleIdCandidate: string) {
   const token = crypto.randomBytes(32).toString('hex')
-  const expires = new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
-
-  return await prisma.pendingLink.create({
-    data: {
-      userId,
-      googleIdCandidate,
-      token,
-      expires
-    }
-  })
+  return { token, expires: new Date(Date.now() + 15 * 60 * 1000) }
 }
 
+// Simplified - removing pending link functionality
 export async function verifyPendingLink(token: string) {
-  const pending = await prisma.pendingLink.findUnique({
-    where: { token }
-  })
-
-  if (!pending || pending.expires < new Date()) {
-    return null
-  }
-
-  // Link the accounts
-  const user = await prisma.user.update({
-    where: { id: pending.userId },
-    data: { googleId: pending.googleIdCandidate }
-  })
-
-  // Delete pending link
-  await prisma.pendingLink.delete({
-    where: { id: pending.id }
-  })
-
-  return user
+  return null
 }
 
 // Rate limiting for auth endpoints - simple in-memory (add Redis later if needed)
@@ -224,36 +190,8 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (existingUser) {
-            if (existingUser.googleId) {
-              // Already linked, proceed
-              return true
-            } else {
-              // Collision: user exists but no googleId
-              const pendingLink = await createPendingLink(existingUser.id, profile?.sub!)
-              // Send confirmation email
-              const confirmUrl = `${process.env.NEXTAUTH_URL}/auth/link/confirm?token=${pendingLink.token}`
-              await transporter.sendMail({
-                from: `"Quản lý Chi Tiêu Gia Đình" <${process.env.SMTP_USER}>`,
-                to: user.email!,
-                subject: "Xác nhận liên kết tài khoản Google",
-                html: `
-                  <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h2>Tìm thấy tài khoản với email này</h2>
-                    <p>Chào ${existingUser.name || user.email},</p>
-                    <p>Bạn muốn liên kết tài khoản Google với tài khoản đã tồn tại không?</p>
-                    <p>Nếu đồng ý, hãy nhấp vào liên kết dưới đây để xác nhận:</p>
-                    <a href="${confirmUrl}" style="background: #28a745; color: white; padding: 12px 24px; text-decoration: none; display: inline-block; border-radius: 4px;">Liên kết tài khoản</a>
-                    <p>Hoặc sao chép và dán liên kết vào trình duyệt:</p>
-                    <p>${confirmUrl}</p>
-                    <p><strong>Lưu ý:</strong> Liên kết này sẽ hết hạn sau 15 phút. Nếu bạn không yêu cầu liên kết, hãy bỏ qua email này.</p>
-                  </div>
-                `,
-                text: `Xác nhận liên kết tài khoản Google: ${confirmUrl} (hết hạn sau 15 phút)`
-              })
-
-              // Prevent auto sign-in, show message to check email
-              throw new Error("Đã gửi liên kết xác nhận tới email. Vui lòng kiểm tra và nhấp vào liên kết để liên kết tài khoản.")
-            }
+            // User exists, proceed (no Google linking needed)
+            return true
           } else {
             // New user, proceed
             await findOrCreateUserByEmail({
@@ -286,7 +224,6 @@ export const authOptions: NextAuthOptions = {
         if (dbUser) {
           token.id = dbUser.id
           token.role = dbUser.role
-          token.familyId = dbUser.familyId
         }
       }
       return token
