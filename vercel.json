@@ -2,7 +2,7 @@
     "version": 2,
     "builds": [
         {
-            "src": "family-expense-manager/next.config.ts",
+            "src": "family-expense-manager/package.json",
             "use": "@vercel/next"
         }
     ],
