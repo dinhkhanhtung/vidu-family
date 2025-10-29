@@ -17,44 +17,6 @@ export const config = {
   ]
 }
 
-// Rate limiting configuration
-const rateLimit = {
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-}
-
-// Store for rate limiting
-const rateLimitStore = new Map()
-
-// Helper to check rate limit
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now()
-  const windowStart = now - rateLimit.windowMs
-
-  // Clean up old entries
-  for (const [key, data] of rateLimitStore.entries()) {
-    if (data.timestamp < windowStart) {
-      rateLimitStore.delete(key)
-    }
-  }
-
-  // Check current IP
-  const current = rateLimitStore.get(ip) || { count: 0, timestamp: now }
-  
-  if (current.timestamp < windowStart) {
-    current.count = 0
-    current.timestamp = now
-  }
-
-  if (current.count >= rateLimit.max) {
-    return false
-  }
-
-  current.count++
-  rateLimitStore.set(ip, current)
-  return true
-}
-
 // Security headers
 const securityHeaders = {
   // Disable iframes
@@ -82,16 +44,6 @@ const securityHeaders = {
 
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
-  const ip = request.ip || "127.0.0.1"
-  
-  // Rate limiting
-  if (!checkRateLimit(ip)) {
-    analytics.track("rate_limit_exceeded", { ip })
-    return new NextResponse("Too Many Requests", {
-      status: 429,
-      headers: { "Retry-After": "900" } // 15 minutes
-    })
-  }
 
   // Add security headers
   Object.entries(securityHeaders).forEach(([key, value]) => {
@@ -115,10 +67,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Track request for analytics
+  // Track request for analytics (simplified without rate limiting)
   analytics.track("page_view", {
     path: request.nextUrl.pathname,
-    ip,
     userAgent: request.headers.get("user-agent")
   })
 

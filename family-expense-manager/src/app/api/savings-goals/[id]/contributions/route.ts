@@ -9,16 +9,17 @@ import { z } from "zod"
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !session.user.familyId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const body = await req.json()
     const validatedData = savingsContributionSchema.parse(body)
 
-    const { contribution, goal } = await addContribution(validatedData)
+    // Simplified implementation - just returns the updated goal
+    const goal = await addContribution(validatedData)
 
-    return NextResponse.json({ contribution, goal })
+    return NextResponse.json({ goal })
   } catch (error) {
     console.error("[Savings Contribution Create]", error)
     if (error instanceof z.ZodError) {

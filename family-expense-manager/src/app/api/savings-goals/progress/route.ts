@@ -7,7 +7,7 @@ import { getSavingsProgress } from "@/lib/services/savings"
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    if (!session?.user?.id || !session.user.familyId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
       : new Date(new Date().getFullYear(), 11, 31) // End of current year
 
     const result = await getSavingsProgress({
-      workspaceId: session.user.familyId,
+      userId: session.user.id,
       startDate,
       endDate
     })
