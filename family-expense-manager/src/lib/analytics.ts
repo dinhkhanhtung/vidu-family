@@ -80,3 +80,17 @@ export const trackBusinessMetric = (
 ) => {
   trackEvent(metric, 'business', currency, value);
 };
+
+// Analytics object for middleware compatibility
+export const analytics = {
+  track: (event: string, properties?: Record<string, any>) => {
+    if (typeof window !== 'undefined') {
+      trackEvent(event, 'middleware', JSON.stringify(properties));
+    }
+  },
+  identify: (userId: string, traits?: Record<string, any>) => {
+    if (typeof window !== 'undefined') {
+      trackUserAction('user_identify', { userId, ...traits });
+    }
+  },
+};
