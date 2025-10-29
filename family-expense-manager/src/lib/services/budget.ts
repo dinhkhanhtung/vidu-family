@@ -66,9 +66,11 @@ export async function createBudget(data: BudgetFormData & { userId: string }) {
     throw new Error("Not authenticated")
   }
 
+  const { categoryId, ...rest } = data;
   return await prisma.budget.create({
     data: {
-      ...data
+      category: categoryId || "", // Map categoryId to category field as expected by Prisma
+      ...rest
     }
   })
 }
