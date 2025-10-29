@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { addContribution } from "@/lib/services/savings"
 import { savingsContributionSchema } from "@/lib/validations/savings"
+import { z } from "zod"
 
 // Add contribution to savings goal
 export async function POST(req: NextRequest) {
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ contribution, goal })
   } catch (error) {
     console.error("[Savings Contribution Create]", error)
-    if (error.name === "ZodError") {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Invalid input", details: error.errors },
         { status: 400 }

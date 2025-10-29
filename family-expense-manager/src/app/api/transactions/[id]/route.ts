@@ -8,11 +8,8 @@ import * as z from 'zod'
 const updateTransactionSchema = z.object({
   amount: z.number().positive().optional(),
   description: z.string().min(1).optional(),
-  notes: z.string().optional(),
   date: z.string().optional(),
-  type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']).optional(),
-  categoryId: z.string().optional(),
-  accountId: z.string().optional(),
+  type: z.enum(['INCOME', 'EXPENSE']).optional(),
 })
 
 export async function GET(
@@ -25,28 +22,16 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const transaction = await (prisma as any).transaction.findUnique({
+    const transaction = await prisma.transaction.findUnique({
       where: { id: params.id },
-      include: {
-        category: true,
-        account: true,
-        workspace: true,
-      },
     })
 
     if (!transaction) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 })
     }
 
-    // Check membership
-    const membership = await prisma.workspaceMember.findFirst({
-      where: {
-        workspaceId: transaction.workspaceId,
-        userId: session.user.id
-      },
-    })
-
-    if (!membership) {
+    // Check ownership
+    if (transaction.userId !== session.user.id) {
       return NextResponse.json({ error: 'Not authorized to view this transaction' }, { status: 403 })
     }
 
@@ -73,95 +58,32 @@ export async function PUT(
     const body = await request.json()
     const validatedData = updateTransactionSchema.parse(body)
 
-    // Get current transaction to check authorization and calculate balance changes
-    const currentTransaction = await (prisma as any).transaction.findUnique({
+    // Get current transaction to check authorization
+    const currentTransaction = await prisma.transaction.findUnique({
       where: { id: params.id },
-      select: {
-        id: true,
-        encryptedAmount: true,
-        type: true,
-        accountId: true,
-        workspaceId: true,
-        createdBy: true,
-        category: true,
-        account: true,
-        workspace: true,
-      },
     })
 
     if (!currentTransaction) {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 })
     }
 
-    // Check membership
-    const membership = await prisma.workspaceMember.findFirst({
-      where: {
-        workspaceId: currentTransaction.workspaceId,
-        userId: session.user.id
-      },
-    })
-
-    if (!membership) {
+    // Check ownership
+    if (currentTransaction.userId !== session.user.id) {
       return NextResponse.json({ error: 'Not authorized to update this transaction' }, { status: 403 })
     }
 
-    // Start a transaction to update balances correctly
-  const updatedTransaction = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      // If amount or type or account changed, we need to reverse the old transaction and apply new one
-  const amount = typeof validatedData.amount !== 'undefined' ? validatedData.amount : Number((currentTransaction as any).encryptedAmount)
-      const type = validatedData.type || currentTransaction.type
-      const accountId = validatedData.accountId || currentTransaction.accountId
-
-      // Reverse old transaction balance impact
-      if (currentTransaction.type !== 'TRANSFER') {
-        const oldMultiplier = currentTransaction.type === 'INCOME' ? -1 : 1
-  await (tx as any).financialAccount.update({
-          where: { id: currentTransaction.accountId },
-          data: {
-            balance: {
-              increment: Number((currentTransaction as any).encryptedAmount) * oldMultiplier,
-            },
-          },
-        })
-      }
-
-      // Apply new transaction balance impact
-      if (type !== 'TRANSFER') {
-        const newMultiplier = type === 'INCOME' ? 1 : -1
-  await (tx as any).financialAccount.update({
-          where: { id: accountId },
-          data: {
-            balance: {
-              increment: amount * newMultiplier,
-            },
-          },
-        })
-      }
-
-      // Update the transaction
-  return await (tx as any).transaction.update({
+      // Simple transaction update without complex balance calculations
+      const updatedTransaction = await prisma.transaction.update({
         where: { id: params.id },
         data: {
-          // map amount -> encryptedAmount if present
-          ...(typeof validatedData.amount !== 'undefined' ? { encryptedAmount: String(validatedData.amount) } : {}),
+          amount: validatedData.amount,
           description: validatedData.description,
-          notes: validatedData.notes,
-          ...(validatedData.date && { date: new Date(validatedData.date) }),
-          ...(validatedData.type && { type: validatedData.type }),
-          ...(validatedData.categoryId && { categoryId: validatedData.categoryId }),
-          ...(validatedData.accountId && { accountId: validatedData.accountId }),
-        },
-        include: {
-          category: true,
-          account: true,
+          date: validatedData.date ? new Date(validatedData.date) : undefined,
+          type: validatedData.type,
         },
       })
-    })
-
-    // map encryptedAmount back to amount
-    const mapTransaction = (t: any) => ({ ...t, amount: typeof t.encryptedAmount !== 'undefined' ? Number(t.encryptedAmount) : (t as any).amount })
-
-    return NextResponse.json(mapTransaction(updatedTransaction))
+  
+      return NextResponse.json(updatedTransaction)
   } catch (error) {
     console.error('Error updating transaction:', error)
     return NextResponse.json(
@@ -191,33 +113,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 })
     }
 
-    // Check membership
-    const membership = await prisma.workspaceMember.findFirst({
-      where: {
-        workspaceId: currentTransaction.workspaceId,
-        userId: session.user.id
-      },
-    })
-
-    if (!membership) {
+    // Check ownership
+    if (currentTransaction.userId !== session.user.id) {
       return NextResponse.json({ error: 'Not authorized to delete this transaction' }, { status: 403 })
     }
 
-    // Reverse the balance impact when deleting
-    if (currentTransaction.type !== 'TRANSFER') {
-      const multiplier = currentTransaction.type === 'INCOME' ? -1 : 1
-      await (prisma as any).financialAccount.update({
-        where: { id: currentTransaction.accountId },
-        data: {
-          balance: {
-            increment: Number((currentTransaction as any).encryptedAmount) * multiplier,
-          },
-        },
-      })
-    }
-
     // Delete the transaction
-    await (prisma as any).transaction.delete({
+    await prisma.transaction.delete({
       where: { id: params.id },
     })
 

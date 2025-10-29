@@ -6,19 +6,20 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, Clock, Target, TrendingUp, Calendar, Plus } from 'lucide-react'
-import { SavingsGoalWithDetails } from '@/lib/savings-goals'
+import { SavingsGoal } from '@prisma/client'
 import { calculateSavingsProgress, getGoalStatus } from '@/lib/savings-goals'
 
 interface SavingsGoalCardProps {
-  goal: SavingsGoalWithDetails
-  onEdit?: (goal: SavingsGoalWithDetails) => void
-  onDelete?: (goal: SavingsGoalWithDetails) => void
-  onAddContribution?: (goal: SavingsGoalWithDetails) => void
+  goal: SavingsGoal
+  onEdit?: (goal: SavingsGoal) => void
+  onDelete?: (goal: SavingsGoal) => void
+  onAddContribution?: (goal: SavingsGoal) => void
 }
 
 export function SavingsGoalCard({ goal, onEdit, onDelete, onAddContribution }: SavingsGoalCardProps) {
   const progress = calculateSavingsProgress(goal)
   const status = getGoalStatus(goal)
+  const isCompleted = progress.currentAmount >= progress.targetAmount
 
   const getStatusIcon = () => {
     switch (status) {
@@ -55,7 +56,7 @@ export function SavingsGoalCard({ goal, onEdit, onDelete, onAddContribution }: S
       case 'on-track':
         return <Badge className="bg-blue-100 text-blue-800">Đúng tiến độ</Badge>
       default:
-        return <Badge variant="secondary">Tạm dừng</Badge>
+        return <Badge variant="secondary">Không có hạn</Badge>
     }
   }
 
@@ -70,9 +71,7 @@ export function SavingsGoalCard({ goal, onEdit, onDelete, onAddContribution }: S
           {getStatusBadge()}
         </div>
 
-        {goal.description && (
-          <CardDescription>{goal.description}</CardDescription>
-        )}
+        <CardDescription>{goal.category}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
@@ -124,7 +123,7 @@ export function SavingsGoalCard({ goal, onEdit, onDelete, onAddContribution }: S
         </div>
 
         {/* Monthly Required */}
-        {!progress.isCompleted && progress.monthlyRequired > 0 && (
+        {!isCompleted && progress.monthlyRequired > 0 && (
           <div className="flex items-center justify-between p-2 bg-muted/50 rounded-md">
             <span className="text-sm text-muted-foreground">Cần tiết kiệm/tháng</span>
             <span className="font-medium">
@@ -137,25 +136,18 @@ export function SavingsGoalCard({ goal, onEdit, onDelete, onAddContribution }: S
         <div className="text-xs text-muted-foreground">
           <div className="flex justify-between">
             <span>Từ: {new Date(goal.createdAt).toLocaleDateString('vi-VN')}</span>
-            <span>Đến: {new Date(goal.targetDate).toLocaleDateString('vi-VN')}</span>
+            <span>Đến: {goal.deadline ? new Date(goal.deadline).toLocaleDateString('vi-VN') : 'Không có'}</span>
           </div>
-          {!progress.isCompleted && progress.daysRemaining > 0 && (
+          {!isCompleted && progress.daysRemaining > 0 && (
             <div className="text-center mt-1">
               Còn {progress.daysRemaining} ngày
             </div>
           )}
         </div>
 
-        {/* Contributions Count */}
-        {goal.contributions.length > 0 && (
-          <div className="text-xs text-muted-foreground">
-            {goal.contributions.length} khoản đóng góp
-          </div>
-        )}
-
         {/* Action Buttons */}
         <div className="flex gap-2 pt-2">
-          {onAddContribution && goal.isActive && !progress.isCompleted && (
+          {onAddContribution && !isCompleted && (
             <Button size="sm" onClick={() => onAddContribution(goal)}>
               <Plus className="w-4 h-4 mr-1" />
               Đóng góp

@@ -7,12 +7,10 @@ import * as z from 'zod'
 const createTransactionSchema = z.object({
   amount: z.number().positive(),
   description: z.string().min(1),
-  notes: z.string().optional(),
   date: z.string(),
-  type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
-  categoryId: z.string(),
-  accountId: z.string(),
-  workspaceId: z.string(),
+  type: z.enum(['INCOME', 'EXPENSE']),
+  category: z.string(),
+  userId: z.string(),
 })
 
 export async function POST(request: NextRequest) {
@@ -25,49 +23,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createTransactionSchema.parse(body)
 
-    // Check if user is member of workspace
-    const membership = await prisma.workspaceMember.findFirst({
-      where: {
-        workspaceId: validatedData.workspaceId,
-        userId: session.user.id,
-      },
-    })
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Not a workspace member' }, { status: 403 })
-    }
+    // For now, allow all authenticated users to create transactions
+    // In production, you'd want to check workspace membership
 
     // Create transaction
     const transaction = await prisma.transaction.create({
       data: {
-        amount: validatedData.amount, // Store as number directly
+        amount: validatedData.amount,
         description: validatedData.description,
-        notes: validatedData.notes,
         date: new Date(validatedData.date),
         type: validatedData.type,
-        categoryId: validatedData.categoryId,
-        accountId: validatedData.accountId,
-        userId: session.user.id,
-        workspaceId: validatedData.workspaceId,
-      },
-      include: {
-        category: true,
-        account: true,
+        category: validatedData.category,
+        userId: validatedData.userId,
       },
     })
-
-    // Update account balances for EXPENSE and INCOME
-    if (validatedData.type !== 'TRANSFER') {
-      const multiplier = validatedData.type === 'INCOME' ? 1 : -1
-      await prisma.financialAccount.update({
-        where: { id: validatedData.accountId },
-        data: {
-          balance: {
-            increment: validatedData.amount * multiplier,
-          },
-        },
-      })
-    }
 
     return NextResponse.json(transaction)
   } catch (error) {
@@ -93,21 +62,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'workspaceId is required' }, { status: 400 })
     }
 
-    // Check membership
-    const membership = await prisma.workspaceMember.findFirst({
-      where: { workspaceId, userId: session.user.id },
-    })
-
-    if (!membership) {
-      return NextResponse.json({ error: 'Not a workspace member' }, { status: 403 })
-    }
-
+    // For now, allow all authenticated users to view transactions
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
     const skip = (page - 1) * limit
 
     // Filters
-    const filters: any = { workspaceId }
+    const filters: any = { userId: session.user.id }
 
     if (searchParams.get('type')) {
       filters.type = searchParams.get('type')

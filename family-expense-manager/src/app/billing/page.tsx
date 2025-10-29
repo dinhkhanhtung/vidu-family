@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { CreditCard, Download, AlertTriangle, CheckCircle, XCircle } from 'lucide-react'
-import { getSubscriptionByWorkspace } from '@/lib/subscriptions'
 
 interface Subscription {
   id: string

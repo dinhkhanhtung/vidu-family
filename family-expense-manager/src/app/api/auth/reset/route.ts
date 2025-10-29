@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     let decoded: any
     try {
       decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET!)
-    } catch (err) {
+    } catch {
       return NextResponse.json({
         error: "Token không hợp lệ hoặc đã hết hạn"
       }, { status: 400 })

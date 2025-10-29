@@ -183,13 +183,14 @@ export default function TransactionsPage() {
                 setEditingTransaction(undefined)
               }}
               initialData={editingTransaction ? {
-                amount: (editingTransaction as any).amount ?? (editingTransaction as any).encryptedAmount ? Number((editingTransaction as any).encryptedAmount) : 0,
+                amount: (editingTransaction as any).amount ?? 0,
                 description: editingTransaction.description ?? '',
                 notes: (editingTransaction as any).notes ?? '',
                 date: editingTransaction.date ? new Date(editingTransaction.date as any) : new Date(),
-                type: editingTransaction.type ?? 'EXPENSE',
-                categoryId: editingTransaction.categoryId ?? '',
-                accountId: editingTransaction.accountId ?? '',
+                type: (editingTransaction.type === 'TRANSFER' ? 'EXPENSE' : editingTransaction.type) ?? 'EXPENSE',
+                category: typeof editingTransaction.category?.name === 'string'
+                  ? editingTransaction.category.name
+                  : (editingTransaction.category as any)?.name || '',
               } : undefined}
             />
           </DialogContent>

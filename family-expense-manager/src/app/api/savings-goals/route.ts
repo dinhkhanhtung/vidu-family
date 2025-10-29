@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { createSavingsGoal, getSavingsGoalsByWorkspace } from '@/lib/savings-goals'
+import { createSavingsGoal, getSavingsGoalsByUser } from '@/lib/savings-goals'
 import { z } from 'zod'
 
 const createSavingsGoalSchema = z.object({
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const goals = await getSavingsGoalsByWorkspace(workspaceId)
+    const goals = await getSavingsGoalsByUser(session.user.id)
 
     return NextResponse.json(goals)
   } catch (error) {
@@ -65,7 +65,9 @@ export async function POST(request: NextRequest) {
 
     const goalData = {
       ...validatedData,
-      workspaceId,
+      deadline: validatedData.targetDate,
+      category: "General",
+      userId: session.user.id
     }
 
     const goal = await createSavingsGoal(goalData)

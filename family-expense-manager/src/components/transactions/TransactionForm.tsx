@@ -58,8 +58,7 @@ export function TransactionForm({
     defaultValues: {
       amount: initialData?.amount || 0,
       description: initialData?.description || "",
-      categoryId: initialData?.categoryId || "",
-      accountId: initialData?.accountId || "",
+      category: initialData?.category || "",
       date: initialData?.date || new Date(),
       type: initialData?.type || "EXPENSE",
       notes: initialData?.notes || "",
@@ -116,7 +115,7 @@ export function TransactionForm({
             <Label htmlFor="type">Transaction Type</Label>
             <Select
               value={selectedType}
-              onValueChange={(value: "INCOME" | "EXPENSE" | "TRANSFER") =>
+              onValueChange={(value: "INCOME" | "EXPENSE") =>
                 setValue("type", value)
               }
             >
@@ -126,7 +125,6 @@ export function TransactionForm({
               <SelectContent>
                 <SelectItem value="INCOME">Income</SelectItem>
                 <SelectItem value="EXPENSE">Expense</SelectItem>
-                <SelectItem value="TRANSFER">Transfer</SelectItem>
               </SelectContent>
             </Select>
             {errors.type && (
@@ -179,17 +177,17 @@ export function TransactionForm({
 
           {/* Category */}
           <div className="space-y-2">
-            <Label htmlFor="categoryId">Category</Label>
+            <Label htmlFor="category">Category</Label>
             <Select
-              value={watch("categoryId")}
-              onValueChange={(value: string) => setValue("categoryId", value)}
+              value={watch("category")}
+              onValueChange={(value: string) => setValue("category", value)}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
                 {filteredCategories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
+                  <SelectItem key={category.id} value={category.name}>
                     <div className="flex items-center gap-2">
                       {category.color && (
                         <div
@@ -203,31 +201,8 @@ export function TransactionForm({
                 ))}
               </SelectContent>
             </Select>
-            {errors.categoryId && (
-              <p className="text-sm text-red-500">{errors.categoryId.message}</p>
-            )}
-          </div>
-
-          {/* Account */}
-          <div className="space-y-2">
-            <Label htmlFor="accountId">Account</Label>
-            <Select
-              value={watch("accountId")}
-              onValueChange={(value: string) => setValue("accountId", value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select account" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts.map((account) => (
-                  <SelectItem key={account.id} value={account.id}>
-                    {account.name} ({account.type})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.accountId && (
-              <p className="text-sm text-red-500">{errors.accountId.message}</p>
+            {errors.category && (
+              <p className="text-sm text-red-500">{errors.category.message}</p>
             )}
           </div>
 

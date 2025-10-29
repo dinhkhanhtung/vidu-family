@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { createBudget, getBudgetsByWorkspace } from '@/lib/budgets'
-import { BudgetPeriod } from '@prisma/client'
 import { z } from 'zod'
 
 const createBudgetSchema = z.object({

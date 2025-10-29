@@ -3,10 +3,9 @@ import { z } from "zod";
 export const transactionSchema = z.object({
   amount: z.number().min(0.01, "Amount must be greater than 0"),
   description: z.string().min(1, "Description is required"),
-  categoryId: z.string().min(1, "Category is required"),
-  accountId: z.string().min(1, "Account is required"),
+  category: z.string().min(1, "Category is required"),
   date: z.date(),
-  type: z.enum(["INCOME", "EXPENSE", "TRANSFER"]),
+  type: z.enum(["INCOME", "EXPENSE"]),
   notes: z.string().optional(),
 });
 

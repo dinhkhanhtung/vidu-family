@@ -10,81 +10,48 @@ import { FeatureLocked } from '@/components/ui/feature-locked'
 import { BudgetWithDetails } from '@/lib/budgets'
 
 export default function BudgetsPage() {
-  const [budgets, setBudgets] = useState<BudgetWithDetails[]>([])
+  const [budgets, setBudgets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState(false)
 
   // Mock data for demo
   useEffect(() => {
-    const mockBudgets: BudgetWithDetails[] = [
+    const mockBudgets = [
       {
         id: '1',
         name: 'Ăn uống tháng 10',
         amount: 5000000,
-        spent: 4200000,
-        categoryId: 'cat1',
-        workspaceId: 'ws1',
         period: 'MONTHLY',
+        category: 'Ăn uống',
+        userId: 'user1',
         startDate: new Date('2024-10-01'),
         endDate: new Date('2024-10-31'),
-        isActive: true,
-        alert80: true,
-        alert90: false,
-        alert100: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        category: {
-          id: 'cat1',
-          name: 'Ăn uống',
-          color: '#ef4444',
-        },
-        alerts: [],
       },
       {
         id: '2',
         name: 'Đi lại tháng 10',
         amount: 2000000,
-        spent: 1800000,
-        categoryId: 'cat2',
-        workspaceId: 'ws1',
         period: 'MONTHLY',
+        category: 'Đi lại',
+        userId: 'user1',
         startDate: new Date('2024-10-01'),
         endDate: new Date('2024-10-31'),
-        isActive: true,
-        alert80: false,
-        alert90: true,
-        alert100: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        category: {
-          id: 'cat2',
-          name: 'Đi lại',
-          color: '#3b82f6',
-        },
-        alerts: [],
       },
       {
         id: '3',
         name: 'Mua sắm tháng 10',
         amount: 3000000,
-        spent: 3500000,
-        categoryId: 'cat3',
-        workspaceId: 'ws1',
         period: 'MONTHLY',
+        category: 'Mua sắm',
+        userId: 'user1',
         startDate: new Date('2024-10-01'),
         endDate: new Date('2024-10-31'),
-        isActive: true,
-        alert80: true,
-        alert90: true,
-        alert100: true,
         createdAt: new Date(),
         updatedAt: new Date(),
-        category: {
-          id: 'cat3',
-          name: 'Mua sắm',
-          color: '#10b981',
-        },
-        alerts: [],
       },
     ]
 
@@ -100,11 +67,11 @@ export default function BudgetsPage() {
     console.log('Create new budget')
   }
 
-  const handleEditBudget = (budget: BudgetWithDetails) => {
+  const handleEditBudget = (budget: any) => {
     console.log('Edit budget:', budget.id)
   }
 
-  const handleDeleteBudget = (budget: BudgetWithDetails) => {
+  const handleDeleteBudget = (budget: any) => {
     console.log('Delete budget:', budget.id)
   }
 
@@ -173,7 +140,7 @@ export default function BudgetsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-yellow-600">
-                  {budgets.filter(b => b.alert80 || b.alert90).length}
+                  0
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Ngân sách cần chú ý
@@ -190,7 +157,7 @@ export default function BudgetsPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {budgets.filter(b => !b.alert80 && !b.alert90 && !b.alert100).length}
+                  {budgets.length}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Ngân sách ổn định

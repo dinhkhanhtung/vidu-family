@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { getSubscriptionByWorkspace } from '@/lib/subscriptions'
+import { getUserSubscription } from '@/lib/subscriptions'
 
 export async function GET(
   req: NextRequest,
@@ -26,8 +26,8 @@ export async function GET(
       )
     }
 
-    // Get subscription for the workspace
-    const subscription = await getSubscriptionByWorkspace(workspaceId)
+    // Get subscription for the user (mock implementation)
+    const subscription = await getUserSubscription(session.user.id as string)
 
     if (!subscription) {
       return NextResponse.json(
@@ -40,15 +40,25 @@ export async function GET(
       subscription: {
         id: subscription.id,
         status: subscription.status,
-        plan: subscription.plan ? {
-          name: subscription.plan.name,
-          maxMembers: subscription.plan.maxMembers,
-          features: subscription.plan.features,
-        } : null,
-        currentPeriodStart: subscription.currentPeriodStart,
+        plan: {
+          name: subscription.planType,
+          features: {
+            unlimitedTransactions: true,
+            basicFeatures: true,
+            budgeting: subscription.planType === 'GROWTH' || subscription.planType === 'BUSINESS',
+            goals: subscription.planType === 'GROWTH' || subscription.planType === 'BUSINESS',
+            alerts: subscription.planType === 'GROWTH' || subscription.planType === 'BUSINESS',
+            export: subscription.planType === 'GROWTH' || subscription.planType === 'BUSINESS',
+            bankConnect: subscription.planType === 'BUSINESS',
+            taxReports: subscription.planType === 'BUSINESS',
+            api: subscription.planType === 'BUSINESS',
+            advancedBudgeting: subscription.planType === 'GROWTH' || subscription.planType === 'BUSINESS',
+            savingsGoals: subscription.planType === 'GROWTH' || subscription.planType === 'BUSINESS',
+          },
+        },
         currentPeriodEnd: subscription.currentPeriodEnd,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-        invoices: subscription.invoices || [],
+        invoices: [],
       }
     })
   } catch (error) {

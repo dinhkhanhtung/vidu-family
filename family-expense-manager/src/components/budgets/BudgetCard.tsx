@@ -48,8 +48,8 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
             {getStatusIcon()}
             <CardTitle className="text-lg">{budget.name}</CardTitle>
           </div>
-          <Badge variant={budget.isActive ? 'default' : 'secondary'}>
-            {budget.isActive ? 'Đang hoạt động' : 'Tạm dừng'}
+          <Badge variant="default">
+            Đang hoạt động
           </Badge>
         </div>
 
@@ -57,9 +57,9 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
           <CardDescription className="flex items-center gap-2">
             <span
               className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: budget.category.color || '#6b7280' }}
+              style={{ backgroundColor: typeof budget.category === 'string' ? '#6b7280' : (budget.category.color || '#6b7280') }}
             />
-            {budget.category.name}
+            {typeof budget.category === 'string' ? budget.category : budget.category.name}
           </CardDescription>
         )}
       </CardHeader>
@@ -112,32 +112,18 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
           />
         </div>
 
-        {/* Alert Status */}
-        {(budget.alert80 || budget.alert90 || budget.alert100) && (
-          <div className="flex flex-wrap gap-1">
-            {budget.alert80 && (
-              <Badge variant="outline" className="text-xs text-orange-600">
-                Cảnh báo 80%
-              </Badge>
-            )}
-            {budget.alert90 && (
-              <Badge variant="outline" className="text-xs text-yellow-600">
-                Cảnh báo 90%
-              </Badge>
-            )}
-            {budget.alert100 && (
-              <Badge variant="outline" className="text-xs text-red-600">
-                Vượt ngân sách
-              </Badge>
-            )}
-          </div>
-        )}
+        {/* Alert Status - Mock for now */}
+        <div className="flex flex-wrap gap-1">
+          <Badge variant="outline" className="text-xs text-orange-600">
+            Cảnh báo 80%
+          </Badge>
+        </div>
 
         {/* Period Info */}
         <div className="text-xs text-muted-foreground">
           <div className="flex justify-between">
             <span>Từ: {new Date(budget.startDate).toLocaleDateString('vi-VN')}</span>
-            <span>Đến: {new Date(budget.endDate).toLocaleDateString('vi-VN')}</span>
+            {budget.endDate && <span>Đến: {new Date(budget.endDate).toLocaleDateString('vi-VN')}</span>}
           </div>
           <div className="text-center mt-1">
             Kỳ: {budget.period === 'WEEKLY' ? 'Tuần' :

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { withAdminAuth } from "@/lib/admin-auth"
 import { prisma } from "@/lib/prisma"
-import { AdminRole } from "@prisma/client"
+
+enum AdminRole {
+  MODERATOR = "MODERATOR",
+  ADMIN = "ADMIN",
+  SUPER_ADMIN = "SUPER_ADMIN"
+}
 
 // Get all users (paginated) - Admin only
 export const GET = withAdminAuth(async (req: NextRequest) => {
@@ -17,13 +22,12 @@ export const GET = withAdminAuth(async (req: NextRequest) => {
 
     const where = {
       OR: [
-        { name: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } }
+        { name: { contains: search, mode: "insensitive" as const } },
+        { email: { contains: search, mode: "insensitive" as const } }
       ],
-      ...(status && { status }),
       ...(subscription && {
         subscriptions: {
-          some: { status: subscription }
+          some: { status: subscription as any }
         }
       })
     }
@@ -36,15 +40,13 @@ export const GET = withAdminAuth(async (req: NextRequest) => {
           name: true,
           email: true,
           role: true,
-          adminRole: true,
           isActive: true,
           createdAt: true,
           updatedAt: true,
           subscriptions: {
             where: { status: "ACTIVE" },
             select: {
-              status: true,
-              plan: { select: { name: true } }
+              status: true
             }
           }
         },
@@ -85,7 +87,7 @@ export const PATCH = withAdminAuth(async (req: NextRequest) => {
     // Validate changes allowed based on admin role
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { adminRole: true }
+      select: { role: true }
     })
 
     if (!user) {
@@ -97,11 +99,11 @@ export const PATCH = withAdminAuth(async (req: NextRequest) => {
 
     // Prevent modifying users with higher admin roles
     if (
-      user.adminRole === AdminRole.SUPER_ADMIN &&
-      data.adminRole !== AdminRole.SUPER_ADMIN
+      user.role === "ADMIN" &&
+      data.role !== "ADMIN"
     ) {
       return NextResponse.json(
-        { error: "Cannot modify super admin role" },
+        { error: "Cannot modify admin role" },
         { status: 403 }
       )
     }
@@ -114,7 +116,6 @@ export const PATCH = withAdminAuth(async (req: NextRequest) => {
         name: true,
         email: true,
         role: true,
-        adminRole: true,
         isActive: true,
         updatedAt: true
       }
@@ -145,7 +146,7 @@ export const DELETE = withAdminAuth(async (req: NextRequest) => {
     // Check user to be deleted
     const user = await prisma.user.findUnique({
       where: { id },
-      select: { adminRole: true }
+      select: { role: true }
     })
 
     if (!user) {
@@ -155,10 +156,10 @@ export const DELETE = withAdminAuth(async (req: NextRequest) => {
       )
     }
 
-    // Prevent deleting super admins
-    if (user.adminRole === AdminRole.SUPER_ADMIN) {
+    // Prevent deleting admins
+    if (user.role === "ADMIN") {
       return NextResponse.json(
-        { error: "Cannot delete super admin" },
+        { error: "Cannot delete admin users" },
         { status: 403 }
       )
     }
