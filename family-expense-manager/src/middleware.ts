@@ -42,6 +42,35 @@ const securityHeaders = {
   `.replace(/\s+/g, " ").trim()
 }
 
+// Simple in-memory rate limiter (best-effort; not suitable for multi-instance without shared store)
+const requestHistoryByIp: Map<string, number[]> = new Map()
+const RATE_LIMIT_WINDOW_MS = 60_000 // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 60 // per IP per window
+
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get("x-forwarded-for") || ""
+  const ip = forwarded.split(",")[0]?.trim()
+  return ip || (request as any).ip || "unknown"
+}
+
+function isSensitiveApiPath(pathname: string): boolean {
+  return (
+    pathname.startsWith("/api/auth") ||
+    pathname.startsWith("/api/transactions") ||
+    pathname.startsWith("/api/webhooks/stripe") ||
+    pathname.startsWith("/api/admin")
+  )
+}
+
+function isRateLimited(ip: string, now: number): boolean {
+  const history = requestHistoryByIp.get(ip) || []
+  const windowStart = now - RATE_LIMIT_WINDOW_MS
+  const recent = history.filter(ts => ts > windowStart)
+  recent.push(now)
+  requestHistoryByIp.set(ip, recent)
+  return recent.length > RATE_LIMIT_MAX_REQUESTS
+}
+
 export async function middleware(request: NextRequest) {
   const response = NextResponse.next()
 
@@ -49,6 +78,30 @@ export async function middleware(request: NextRequest) {
   Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value)
   })
+
+  // Attach/propagate request id
+  const existingRequestId = request.headers.get("x-request-id")
+  const requestId = existingRequestId || crypto.randomUUID()
+  response.headers.set("x-request-id", requestId)
+
+  // Best-effort rate limiting for sensitive API routes
+  if (isSensitiveApiPath(request.nextUrl.pathname)) {
+    const ip = getClientIp(request)
+    const now = Date.now()
+    if (isRateLimited(ip, now)) {
+      return new NextResponse(
+        JSON.stringify({ error: "Too many requests" }),
+        {
+          status: 429,
+          headers: {
+            "content-type": "application/json",
+            "retry-after": Math.ceil(RATE_LIMIT_WINDOW_MS / 1000).toString(),
+            "x-request-id": requestId
+          }
+        }
+      )
+    }
+  }
 
   // Verify authentication for protected routes
   if (shouldProtectRoute(request.nextUrl.pathname)) {

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import * as z from 'zod'
+import { getRequestIdFromHeaders, logError, logInfo } from '@/lib/logger'
 
 const createTransactionSchema = z.object({
   amount: z.number().positive(),
@@ -17,7 +18,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const res = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const requestId = getRequestIdFromHeaders(request.headers)
+      if (requestId) res.headers.set('x-request-id', requestId)
+      return res
     }
 
     const body = await request.json()
@@ -38,13 +42,20 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(transaction)
+    const requestId = getRequestIdFromHeaders(request.headers)
+    logInfo('transaction_created', { requestId, userId: session.user.id, transactionId: transaction.id })
+    const res = NextResponse.json(transaction)
+    if (requestId) res.headers.set('x-request-id', requestId)
+    return res
   } catch (error) {
-    console.error('Error creating transaction:', error)
-    return NextResponse.json(
+    const requestId = getRequestIdFromHeaders(request.headers)
+    logError('transaction_create_failed', { requestId, error: (error as Error)?.message })
+    const res = NextResponse.json(
       { error: 'Failed to create transaction' },
       { status: 500 }
     )
+    if (requestId) res.headers.set('x-request-id', requestId)
+    return res
   }
 }
 
@@ -52,7 +63,10 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const res = NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const requestId = getRequestIdFromHeaders(request.headers)
+      if (requestId) res.headers.set('x-request-id', requestId)
+      return res
     }
 
     const { searchParams } = new URL(request.url)
@@ -108,7 +122,7 @@ export async function GET(request: NextRequest) {
       amount: typeof t.encryptedAmount !== 'undefined' ? Number(t.encryptedAmount) : (t as any).amount,
     })
 
-    return NextResponse.json({
+    const body = {
       transactions: (transactions as any[]).map(mapTransaction),
       pagination: {
         page,
@@ -116,12 +130,20 @@ export async function GET(request: NextRequest) {
         total,
         totalPages: Math.ceil(total / limit),
       },
-    })
+    }
+    const requestId = getRequestIdFromHeaders(request.headers)
+    logInfo('transactions_listed', { requestId, userId: session.user.id, count: (transactions as any[]).length })
+    const res = NextResponse.json(body)
+    if (requestId) res.headers.set('x-request-id', requestId)
+    return res
   } catch (error) {
-    console.error('Error fetching transactions:', error)
-    return NextResponse.json(
+    const requestId = getRequestIdFromHeaders(request.headers)
+    logError('transactions_list_failed', { requestId, error: (error as Error)?.message })
+    const res = NextResponse.json(
       { error: 'Failed to fetch transactions' },
       { status: 500 }
     )
+    if (requestId) res.headers.set('x-request-id', requestId)
+    return res
   }
 }
