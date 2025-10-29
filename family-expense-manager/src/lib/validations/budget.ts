@@ -27,3 +27,5 @@ export const budgetAlertSchema = z.object({
 })
 
 export type BudgetAlertData = z.infer<typeof budgetAlertSchema>
+
+export default budgetSchema
