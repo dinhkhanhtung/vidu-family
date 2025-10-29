@@ -6,15 +6,11 @@ import { TransactionForm } from '@/components/transactions/TransactionForm'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { CalendarIcon, Plus, Filter, Edit, Trash2 } from 'lucide-react'
+import { Plus, Filter, Edit, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
 import { Transaction } from '@/types/transaction'
 
 interface Category {
@@ -297,11 +293,10 @@ export default function TransactionsPage() {
 
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <div className={`font-mono font-bold ${
-                        transaction.type === 'INCOME' ? 'text-green-600' :
-                        transaction.type === 'EXPENSE' ? 'text-red-600' :
-                        'text-blue-600'
-                      }`}>
+                      <div className={`font-mono font-bold ${transaction.type === 'INCOME' ? 'text-green-600' :
+                          transaction.type === 'EXPENSE' ? 'text-red-600' :
+                            'text-blue-600'
+                        }`}>
                         {transaction.type === 'INCOME' ? '+' : transaction.type === 'EXPENSE' ? '-' : ''}
                         {transaction.amount?.toLocaleString('vi-VN')} ₫
                       </div>

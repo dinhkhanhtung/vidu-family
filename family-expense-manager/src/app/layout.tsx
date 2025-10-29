@@ -19,13 +19,17 @@ export const metadata: Metadata = {
   description: "Quản lý chi tiêu gia đình thông minh với tính năng theo dõi giao dịch, ngân sách, mục tiêu tiết kiệm và báo cáo chi tiết.",
   keywords: ["quản lý chi tiêu", "gia đình", "ngân sách", "tiết kiệm", "giao dịch", "báo cáo"],
   authors: [{ name: "Family Expense Manager Team" }],
-  viewport: "width=device-width, initial-scale=1",
   robots: "index, follow",
   openGraph: {
     title: "Family Expense Manager",
     description: "Quản lý chi tiêu gia đình thông minh",
     type: "website",
   },
+};
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
 };
 
 export default function RootLayout({

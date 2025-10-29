@@ -123,23 +123,15 @@ Các biến môi trường cần thiết:
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - Content Security Policy
 
-### 3. Rate Limiting
+### 3. Rate Limiting & Request ID
 
-```typescript
-import { securityMiddleware } from '@/lib/security';
+- Rate limiting cấp middleware cho các route nhạy cảm: `/api/auth`, `/api/transactions`, `/api/webhooks/stripe`, `/api/admin`.
+- Mỗi request sẽ có header `x-request-id` để dễ theo dõi trong logs và phản hồi.
 
-// Trong API routes
-export async function POST(request: NextRequest) {
-  const securityCheck = securityMiddleware(request, 'auth');
-  if (securityCheck.error) {
-    return Response.json(
-      { error: securityCheck.error },
-      { status: securityCheck.status }
-    );
-  }
-
-  // Xử lý request
-}
+```ts
+// Được triển khai trong `src/middleware.ts`
+// - Giới hạn mặc định: 60 requests/phút/IP (best-effort, in-memory)
+// - Thêm security headers và x-request-id
 ```
 
 ## ⚡ Tối ưu hóa hiệu suất
@@ -228,7 +220,7 @@ docker-compose exec -T postgres psql -U postgres -d family_expense_manager < bac
 
 ### 1. GitHub Actions Workflow
 
-File `.github/workflows/deploy.yml` bao gồm:
+File `.github/workflows/ci.yml` bao gồm:
 
 - ✅ Build và test tự động
 - ✅ Deploy tới production (main branch)

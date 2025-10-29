@@ -14,7 +14,7 @@ export default function AdminDashboard() {
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Analytics Overview</h2>
         <p className="text-muted-foreground">
-          Monitor your platform's performance and growth metrics
+          Monitor your platform’s performance and growth metrics
         </p>
       </div>
 
