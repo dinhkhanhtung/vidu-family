@@ -87,6 +87,7 @@ function checkRateLimit(key: string, max = 5, window = 15 * 60 * 1000) {
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -94,14 +95,14 @@ export const authOptions: NextAuthOptions = {
     }),
     EmailProvider({
       server: {
-        host: process.env.SMTP_HOST,
+        host: process.env.SMTP_HOST || "smtp.resend.com",
         port: parseInt(process.env.SMTP_PORT || "587"),
         auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD
+          user: process.env.SMTP_USER || "resend",
+          pass: process.env.SMTP_PASSWORD || ""
         }
       },
-      from: process.env.SMTP_USER,
+      from: process.env.SMTP_USER || process.env.RESEND_FROM || "onboarding@resend.dev",
       async sendVerificationRequest({
         identifier: email,
         url,
