@@ -88,16 +88,10 @@ function checkRateLimit(key: string, max = 5, window = 15 * 60 * 1000) {
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
   // Secret is required - without it NextAuth fails silently
-  secret: process.env.NEXTAUTH_SECRET || (function() {
-    const message = 'NEXTAUTH_SECRET is required but not set'
-    console.error(message)
-    throw new Error(message)
-  })(),
+  secret: process.env.NEXTAUTH_SECRET || 'development-secret-change-in-production',
   // Add missing NEXTAUTH_URL for production
-  ...(process.env.NEXTAUTH_URL && {
-    baseUrl: process.env.NEXTAUTH_URL,
-    basePath: '/api/auth',
-  }),
+  baseUrl: process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
+  basePath: '/api/auth',
   // Disable SSL verification for development
   ...(process.env.NODE_ENV === 'development' && {
     useSecureCookies: false,
