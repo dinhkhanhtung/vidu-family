@@ -21,6 +21,36 @@ interface EmailOptions {
 }
 
 export const sendEmail = async ({ to, subject, html, text }: EmailOptions) => {
+  const useResend = !!process.env.RESEND_API_KEY
+  if (useResend) {
+    try {
+      const from = process.env.RESEND_FROM || 'onboarding@resend.dev'
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from,
+          to,
+          subject,
+          html,
+          text: text || html.replace(/<[^>]*>/g, "")
+        })
+      })
+      if (!res.ok) {
+        const err = await res.text()
+        throw new Error(`Resend API error: ${res.status} ${err}`)
+      }
+      return await res.json()
+    } catch (error) {
+      console.error("Failed to send email via Resend:", error)
+      throw error
+    }
+  }
+
+  // Fallback to SMTP
   try {
     const info = await transporter.sendMail({
       from: `"Quản lý Chi Tiêu Gia Đình" <${process.env.SMTP_USER}>`,
@@ -36,7 +66,7 @@ export const sendEmail = async ({ to, subject, html, text }: EmailOptions) => {
 
     return info
   } catch (error) {
-    console.error("Failed to send email:", error)
+    console.error("Failed to send email via SMTP:", error)
     throw error
   }
 }

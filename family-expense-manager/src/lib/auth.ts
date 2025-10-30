@@ -6,6 +6,7 @@ import CredentialsProvider from "next-auth/providers/credentials"
 import { prisma } from "./prisma"
 import bcrypt from "bcryptjs"
 import nodemailer from "nodemailer"
+import { sendEmail } from "./email"
 import crypto from "crypto"
 // import { trackEvent } from "./analytics"
 
@@ -109,8 +110,7 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút.")
         }
 
-        const result = await transporter.sendMail({
-          from: `"Quản lý Chi Tiêu Gia Đình" <${process.env.SMTP_USER}>`,
+        const result = await sendEmail({
           to: email,
           subject: "Liên kết đăng nhập",
           html: `

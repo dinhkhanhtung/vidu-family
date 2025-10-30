@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import jwt from "jsonwebtoken"
-import nodemailer from "nodemailer"
+import { sendEmail } from "@/lib/email"
 
 // Rate limiting: simple in-memory store (replace with Redis in production)
 const rateLimit = new Map<string, { count: number, reset: number }>()
@@ -24,16 +24,7 @@ function checkRateLimit(ip: string, max = 3, window = 15 * 60 * 1000) {
   return true
 }
 
-// Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD
-  }
-})
+// Email sending handled by sendEmail helper (Resend API or SMTP)
 
 export async function POST(request: NextRequest) {
   try {
@@ -72,8 +63,7 @@ export async function POST(request: NextRequest) {
     const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset?token=${resetToken}`
 
     try {
-      await transporter.sendMail({
-        from: `"Quản lý Chi Tiêu Gia Đình" <${process.env.SMTP_USER}>`,
+      await sendEmail({
         to: email,
         subject: "Đặt lại mật khẩu",
         html: `
