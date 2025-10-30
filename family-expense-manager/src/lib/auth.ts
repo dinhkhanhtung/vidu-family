@@ -98,6 +98,10 @@ export const authOptions: NextAuthOptions = {
     baseUrl: process.env.NEXTAUTH_URL,
     basePath: '/api/auth',
   }),
+  // Disable SSL verification for development
+  ...(process.env.NODE_ENV === 'development' && {
+    useSecureCookies: false,
+  }),
   providers: [
     // Only include Google provider if credentials are set
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
@@ -143,6 +147,9 @@ export const authOptions: NextAuthOptions = {
             Liên kết đăng nhập: ${url}
             Liên kết này sẽ hết hạn sau 1 giờ. Nếu bạn không yêu cầu đăng nhập, hãy bỏ qua email này.
           `
+        }).catch((error) => {
+          console.error("Email send error:", error)
+          throw new Error("Failed to send verification email")
         })
 
         if (process.env.NODE_ENV === 'development') {

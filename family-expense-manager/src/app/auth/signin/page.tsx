@@ -11,9 +11,13 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     setLoading(true)
     try {
-      await signIn("google")
+      const result = await signIn("google", { callbackUrl: "/" })
+      if (result?.error) {
+        setMessage("Đăng nhập thất bại: " + result.error)
+      }
     } catch (error: unknown) {
       setMessage((error as { message: string } | undefined)?.message || "Đăng nhập thất bại")
+    } finally {
       setLoading(false)
     }
   }
