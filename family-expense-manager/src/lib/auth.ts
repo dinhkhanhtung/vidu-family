@@ -89,9 +89,6 @@ export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
   // Secret is required - without it NextAuth fails silently
   secret: process.env.NEXTAUTH_SECRET || 'development-secret-change-in-production',
-  // Add missing NEXTAUTH_URL for production
-  baseUrl: process.env.NEXTAUTH_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000'),
-  basePath: '/api/auth',
   // Disable SSL verification for development
   ...(process.env.NODE_ENV === 'development' && {
     useSecureCookies: false,
