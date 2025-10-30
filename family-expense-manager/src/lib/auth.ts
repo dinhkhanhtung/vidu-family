@@ -87,17 +87,16 @@ function checkRateLimit(key: string, max = 5, window = 15 * 60 * 1000) {
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
-  // Secret is required - without it NextAuth fails silently
-  secret: process.env.NEXTAUTH_SECRET || 'development-secret-change-in-production',
-  // Disable SSL verification for development
-  ...(process.env.NODE_ENV === 'development' && {
-    useSecureCookies: false,
-  }),
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
-    // Force include Google provider even if environment variables might be missing
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "select_account"
+        }
+      }
     }),
     EmailProvider({
       server: {
