@@ -1,12 +1,8 @@
 import { NextRequest } from 'next/server'
-import { GET as NextAuthGET, POST as NextAuthPOST } from '../[...nextauth]/route'
+import NextAuth from "next-auth"
+import { authOptions } from "../../../../lib/auth"
 
-export const GET = async (req: NextRequest) => {
-  console.log('[NextAuth] GET /api/auth/signin')
-  return NextAuthGET(req)
-}
+const handler = NextAuth(authOptions)
 
-export const POST = async (req: NextRequest) => {
-  console.log('[NextAuth] POST /api/auth/signin')
-  return NextAuthPOST(req)
-}
+// Let NextAuth handle all methods
+export { handler as GET, handler as POST }
