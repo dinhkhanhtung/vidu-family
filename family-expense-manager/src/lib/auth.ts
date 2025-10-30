@@ -10,6 +10,14 @@ import { sendEmail } from "./email"
 import crypto from "crypto"
 // import { trackEvent } from "./analytics"
 
+// Debug logging for environment variables
+console.log('Auth configuration check:')
+console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET')
+console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET')
+console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'SET' : 'NOT SET')
+console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET')
+
 // Nodemailer transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -94,13 +102,11 @@ export const authOptions: NextAuthOptions = {
     useSecureCookies: false,
   }),
   providers: [
-    // Only include Google provider if credentials are set
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
-      GoogleProvider({
-        clientId: process.env.GOOGLE_CLIENT_ID!,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      })
-    ] : []),
+    // Force include Google provider even if environment variables might be missing
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || 'dummy-client-id',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-client-secret',
+    }),
     EmailProvider({
       server: {
         host: process.env.SMTP_HOST || "smtp.resend.com",
@@ -222,6 +228,7 @@ export const authOptions: NextAuthOptions = {
         } catch (error: any) {
           console.error("Google sign-in error details:", error)
           console.error("Error stack:", error.stack)
+          console.error("Database connection check:", process.env.DATABASE_URL ? 'SET' : 'NOT SET')
           return `/auth/signin?error=AccessDenied`
         }
       }
@@ -258,6 +265,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
+  debug: process.env.NODE_ENV === 'development',
   events: {
     async signOut() {
       // Optional cleanup
