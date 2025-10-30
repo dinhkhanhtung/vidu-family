@@ -1,6 +1,8 @@
 {
   "framework": "nextjs",
-  "regions": ["sin1"],
+  "regions": [
+    "sin1"
+  ],
   "functions": {
     "src/app/api/**/*.ts": {
       "maxDuration": 30
@@ -58,8 +60,19 @@
   "installCommand": "npm install",
   "outputDirectory": ".next",
   "images": {
-    "sizes": [256, 384, 640, 750, 828, 1080, 1200],
-    "domains": ["*.googleusercontent.com", "vercel.app"],
+    "sizes": [
+      256,
+      384,
+      640,
+      750,
+      828,
+      1080,
+      1200
+    ],
+    "domains": [
+      "*.googleusercontent.com",
+      "vercel.app"
+    ],
     "minimumCacheTTL": 60
   },
   "git": {
@@ -73,5 +86,11 @@
   },
   "public": false,
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/api/auth/(.*)",
+      "destination": "/api/auth/[...nextauth]"
+    }
+  ]
 }
