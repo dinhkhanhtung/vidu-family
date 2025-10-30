@@ -1,127 +1,134 @@
-import { NextAuthOptions } from "next-auth"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import GoogleProvider from "next-auth/providers/google"
-import EmailProvider from "next-auth/providers/email"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "./prisma"
-import bcrypt from "bcryptjs"
-import nodemailer from "nodemailer"
-import { sendEmail } from "./email"
-import crypto from "crypto"
+import type { NextAuthOptions } from "next-auth"import { NextAuthOptions } from "next-auth"
+
+import { PrismaAdapter } from "@auth/prisma-adapter"import { PrismaAdapter } from "@auth/prisma-adapter"
+
+import GoogleProvider from "next-auth/providers/google"import GoogleProvider from "next-auth/providers/google"
+
+import { prisma } from "./prisma"import { prisma } from "./prisma"
+
 // import { trackEvent } from "./analytics"
 
-// Nodemailer transporter
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD
-  }
-})
-
-// Helper functions
-export async function findOrCreateUserByEmail({
-  email,
-  name,
-  image,
-  googleId
-}: {
-  email: string
-  name?: string | null
-  image?: string | null
-  googleId?: string
-}) {
-  let user = await prisma.user.findUnique({
-    where: { email }
-  })
-
-  if (user) {
-    return user
-  }
-
-  // Create new user
-  user = await prisma.user.create({
-    data: {
-      email,
-      name,
-      image,
-      emailVerified: googleId ? new Date() : null
-    }
-  })
-
-  return user
-}
-
-// Simplified - removing pending link functionality for now
-export async function createPendingLink(userId: string, googleIdCandidate: string) {
-  const token = crypto.randomBytes(32).toString('hex')
-  return { token, expires: new Date(Date.now() + 15 * 60 * 1000) }
-}
-
-// Simplified - removing pending link functionality
-export async function verifyPendingLink(token: string) {
-  return null
-}
-
-// Rate limiting for auth endpoints - simple in-memory (add Redis later if needed)
-const rateLimit = new Map<string, { count: number, reset: number }>()
-
-function checkRateLimit(key: string, max = 5, window = 15 * 60 * 1000) {
-  const now = Date.now()
-  const entry = rateLimit.get(key)
-
-  if (!entry || now > entry.reset) {
-    rateLimit.set(key, { count: 1, reset: now + window })
-    return true
-  }
-
-  if (entry.count >= max) {
-    return false
-  }
-
-  entry.count++
-  return true
-}
-
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma) as any,
-  secret: process.env.NEXTAUTH_SECRET,
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          prompt: "select_account"
-        }
-      }
-    }),
-    EmailProvider({
-      server: {
-        host: process.env.SMTP_HOST || "smtp.resend.com",
-        port: parseInt(process.env.SMTP_PORT || "587"),
-        auth: {
-          user: process.env.SMTP_USER || "resend",
-          pass: process.env.SMTP_PASSWORD || ""
-        }
-      },
-      from: process.env.SMTP_USER || process.env.RESEND_FROM || "onboarding@resend.dev",
-      async sendVerificationRequest({
-        identifier: email,
-        url,
-      }) {
-        if (!checkRateLimit(`email:${email}`)) {
-          throw new Error("Quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút.")
-        }
 
-        const result = await sendEmail({
-          to: email,
-          subject: "Liên kết đăng nhập",
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2>Liên kết đăng nhập của bạn</h2>
+  debug: true,async function createUser(email: string, name?: string | null, image?: string | null) {
+
+  adapter: PrismaAdapter(prisma),  try {
+
+  providers: [    const user = await prisma.user.create({
+
+    GoogleProvider({      data: {
+
+      clientId: process.env.GOOGLE_CLIENT_ID!,        email,
+
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,        name,
+
+      authorization: {        image,
+
+        params: {        emailVerified: new Date()
+
+          access_type: "offline",      }
+
+          response_type: "code"    })
+
+        }    return user
+
+      }  } catch (error) {
+
+    })    console.error('Error creating user:', error)
+
+  ],    return null
+
+  pages: {  }
+
+    signIn: '/auth/signin',}
+
+    error: '/auth/error'
+
+  },export const authOptions: NextAuthOptions = {
+
+  callbacks: {  providers: [
+
+    async signIn({ user, account, profile }) {    GoogleProvider({
+
+      try {      clientId: process.env.GOOGLE_CLIENT_ID!,
+
+        const existingUser = await prisma.user.findUnique({      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+
+          where: { email: user.email! }      authorization: {
+
+        })        params: {
+
+          prompt: "select_account",
+
+        if (!existingUser) {          access_type: "offline",
+
+          await prisma.user.create({          response_type: "code"
+
+            data: {        }
+
+              email: user.email!,      }
+
+              name: user.name,    })
+
+              image: user.image,  ],
+
+              emailVerified: new Date()  adapter: PrismaAdapter(prisma),
+
+            }  secret: process.env.NEXTAUTH_SECRET,
+
+          })  session: {
+
+        }    strategy: "jwt"
+
+        return true  },
+
+      } catch (error) {    EmailProvider({
+
+        console.error('Sign in error:', error)      server: {
+
+        return false        host: process.env.SMTP_HOST || "smtp.resend.com",
+
+      }        port: parseInt(process.env.SMTP_PORT || "587"),
+
+    },        auth: {
+
+    async jwt({ token, account }) {          user: process.env.SMTP_USER || "resend",
+
+      if (account) {          pass: process.env.SMTP_PASSWORD || ""
+
+        token.accessToken = account.access_token        }
+
+      }      },
+
+      return token      from: process.env.SMTP_USER || process.env.RESEND_FROM || "onboarding@resend.dev",
+
+    },      async sendVerificationRequest({
+
+    async session({ session, token }) {        identifier: email,
+
+      if (session.user) {        url,
+
+        session.user.id = token.sub!      }) {
+
+      }        if (!checkRateLimit(`email:${email}`)) {
+
+      return session          throw new Error("Quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút.")
+
+    }        }
+
+  },
+
+  session: {        const result = await sendEmail({
+
+    strategy: "jwt",          to: email,
+
+    maxAge: 30 * 24 * 60 * 60 // 30 days          subject: "Liên kết đăng nhập",
+
+  },          html: `
+
+  secret: process.env.NEXTAUTH_SECRET            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+
+}              <h2>Liên kết đăng nhập của bạn</h2>
               <p>Chào bạn,</p>
               <p>Nhấp vào liên kết dưới đây để đăng nhập vào tài khoản:</p>
               <a href="${url}" style="background: #007bff; color: white; padding: 12px 24px; text-decoration: none; display: inline-block; border-radius: 4px;">Đăng nhập ngay</a>
