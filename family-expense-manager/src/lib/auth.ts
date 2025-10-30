@@ -87,12 +87,25 @@ function checkRateLimit(key: string, max = 5, window = 15 * 60 * 1000) {
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma) as any,
-  secret: process.env.NEXTAUTH_SECRET,
+  // Secret is required - without it NextAuth fails silently
+  secret: process.env.NEXTAUTH_SECRET || (function() {
+    const message = 'NEXTAUTH_SECRET is required but not set'
+    console.error(message)
+    throw new Error(message)
+  })(),
+  // Add missing NEXTAUTH_URL for production
+  ...(process.env.NEXTAUTH_URL && {
+    baseUrl: process.env.NEXTAUTH_URL,
+    basePath: '/api/auth',
+  }),
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
+    // Only include Google provider if credentials are set
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID!,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      })
+    ] : []),
     EmailProvider({
       server: {
         host: process.env.SMTP_HOST || "smtp.resend.com",
@@ -184,35 +197,40 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
+      console.log("SignIn attempt:", { provider: account?.provider, email: user.email })
+
       if (account?.provider === "google") {
         try {
+          console.log("Google sign-in finding user:", user.email)
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email! }
           })
 
+          console.log("Existing user found:", !!existingUser)
+
           if (existingUser) {
-            // User exists, proceed (no Google linking needed)
             return true
           } else {
-            // New user, proceed
+            console.log("Creating new user for:", user.email)
             await findOrCreateUserByEmail({
               email: user.email!,
               name: user.name,
               image: user.image,
               googleId: profile?.sub
             })
-            // Analytics: user signup via Google
+            console.log("New user created successfully")
             return true
           }
         } catch (error: any) {
-          console.error("Google sign-in error:", error)
-          throw error
+          console.error("Google sign-in error details:", error)
+          console.error("Error stack:", error.stack)
+          return `/auth/signin?error=AccessDenied`
         }
       }
 
       if (account?.provider === "email") {
-        // For magic link, just proceed - NextAuth handles user creation
-        // Analytics: user signin via magic link
+        console.log("Email sign-in for:", user.email)
+        return true
       }
 
       return true
