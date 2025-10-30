@@ -164,7 +164,7 @@ function Dashboard() {
                     </div>
                   </div>
                   <div className={`font-bold ${transaction.type === 'INCOME' ? 'text-green-600' :
-                      transaction.type === 'EXPENSE' ? 'text-red-600' : 'text-blue-600'
+                    transaction.type === 'EXPENSE' ? 'text-red-600' : 'text-blue-600'
                     }`}>
                     {transaction.type === 'INCOME' ? '+' : transaction.type === 'EXPENSE' ? '-' : ''}
                     {transaction.amount?.toLocaleString('vi-VN')} ₫
@@ -197,16 +197,16 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b">
-        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <Wallet className="h-8 w-8 text-blue-600" />
             <span className="text-2xl font-bold text-gray-900">Vidu Family</span>
           </div>
-          <div className="flex gap-4">
-            <Button asChild variant="outline">
+          <div className="flex gap-2 sm:gap-4 flex-wrap">
+            <Button asChild variant="outline" className="w-full sm:w-auto">
               <Link href="/auth/signin">Đăng nhập</Link>
             </Button>
-            <Button asChild>
+            <Button asChild className="w-full sm:w-auto">
               <Link href="/pricing">Bắt đầu miễn phí</Link>
             </Button>
           </div>
