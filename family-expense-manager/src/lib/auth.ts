@@ -1,7 +1,53 @@
 import { NextAuthOptions } from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import GoogleProvider from "next-auth/providers/google"
+import crypto from "crypto"
 import { prisma } from "./prisma"
+
+// Helper functions
+export async function findOrCreateUserByEmail({
+  email,
+  name,
+  image,
+  googleId
+}: {
+  email: string
+  name?: string | null
+  image?: string | null
+  googleId?: string
+}) {
+  let user = await prisma.user.findUnique({
+    where: { email }
+  })
+
+  if (user) {
+    return user
+  }
+
+  // Create new user
+  user = await prisma.user.create({
+    data: {
+      email,
+      name,
+      image,
+      emailVerified: googleId ? new Date() : null
+    }
+  })
+
+  return user
+}
+
+// Simplified - removing pending link functionality for now
+export async function createPendingLink(_userId: string, _googleIdCandidate: string) {
+  const token = crypto.randomBytes(32).toString('hex')
+  return { token, expires: new Date(Date.now() + 15 * 60 * 1000) }
+}
+
+// Simplified - removing pending link functionality
+export async function verifyPendingLink(_token: string) {
+  // For now, return null to indicate no pending link
+  return null
+}
 
 export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
