@@ -104,8 +104,8 @@ export const authOptions: NextAuthOptions = {
   providers: [
     // Force include Google provider even if environment variables might be missing
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || 'dummy-client-id',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-client-secret',
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     EmailProvider({
       server: {
@@ -229,7 +229,7 @@ export const authOptions: NextAuthOptions = {
           console.error("Google sign-in error details:", error)
           console.error("Error stack:", error.stack)
           console.error("Database connection check:", process.env.DATABASE_URL ? 'SET' : 'NOT SET')
-          return `/auth/signin?error=AccessDenied`
+          return `/auth/error?error=AccessDenied`
         }
       }
 
