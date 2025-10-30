@@ -9,12 +9,20 @@ import { Badge } from '@/components/ui/badge'
 import { ArrowRight, Wallet, TrendingUp, Users, Shield, Smartphone, DollarSign, Target, PiggyBank, Plus } from 'lucide-react'
 import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
-import { Transaction } from '@/types/transaction'
+// Using a simplified transaction type aligned with the dashboard API
+type DashboardTransaction = {
+  id: string
+  amount: number
+  description: string | null
+  date: string | Date
+  type: 'INCOME' | 'EXPENSE' | 'TRANSFER'
+  category: string
+}
 
 // Dashboard component for authenticated users
 function Dashboard() {
   const { data: session } = useSession()
-  const [recentTransactions, setRecentTransactions] = useState<(Transaction & { category: { name: string; color: string } })[]>([])
+  const [recentTransactions, setRecentTransactions] = useState<DashboardTransaction[]>([])
   const [stats, setStats] = useState({
     totalIncome: 0,
     totalExpense: 0,
@@ -29,16 +37,17 @@ function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      // For now, show demo data or empty state
-      // TODO: Implement proper API endpoints for dashboard data
-      setRecentTransactions([])
-      setStats({
-        totalIncome: 0,
-        totalExpense: 0,
-        balance: 0,
-      })
+      const res = await fetch('/api/dashboard', { cache: 'no-store' })
+      if (!res.ok) {
+        throw new Error('Failed to load dashboard')
+      }
+      const data = await res.json()
+      setStats(data.stats || { totalIncome: 0, totalExpense: 0, balance: 0 })
+      setRecentTransactions(Array.isArray(data.recentTransactions) ? data.recentTransactions : [])
     } catch (error) {
       console.error('Error loading dashboard data:', error)
+      setRecentTransactions([])
+      setStats({ totalIncome: 0, totalExpense: 0, balance: 0 })
     }
   }
 
@@ -145,22 +154,18 @@ function Dashboard() {
               {recentTransactions.map(transaction => (
                 <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: transaction.category?.color || '#6B7280' }}
-                    />
+                    <div className="w-3 h-3 rounded-full bg-gray-400" />
                     <div>
-                      <div className="font-medium">{transaction.category?.name}</div>
+                      <div className="font-medium">{transaction.category}</div>
                       <div className="text-sm text-gray-600">{transaction.description}</div>
                       <div className="text-sm text-gray-500">
                         {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: vi })}
                       </div>
                     </div>
                   </div>
-                  <div className={`font-bold ${
-                    transaction.type === 'INCOME' ? 'text-green-600' :
-                    transaction.type === 'EXPENSE' ? 'text-red-600' : 'text-blue-600'
-                  }`}>
+                  <div className={`font-bold ${transaction.type === 'INCOME' ? 'text-green-600' :
+                      transaction.type === 'EXPENSE' ? 'text-red-600' : 'text-blue-600'
+                    }`}>
                     {transaction.type === 'INCOME' ? '+' : transaction.type === 'EXPENSE' ? '-' : ''}
                     {transaction.amount?.toLocaleString('vi-VN')} ₫
                   </div>
