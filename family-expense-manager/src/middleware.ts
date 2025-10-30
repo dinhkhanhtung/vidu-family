@@ -8,12 +8,13 @@ export const config = {
     /*
      * Match all request paths except for the ones starting with:
      * - api/auth (auth endpoints)
+     * - auth (auth pages)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
      */
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)"
+    "/((?!api/auth|auth/|_next/static|_next/image|favicon.ico|public).*)"
   ]
 }
 
@@ -32,13 +33,14 @@ const securityHeaders = {
   // Content security policy
   "Content-Security-Policy": `
     default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://analytics.umami.is;
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' data: https:;
-    font-src 'self';
-    connect-src 'self' https://analytics.umami.is;
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://analytics.umami.is https://accounts.google.com;
+    style-src 'self' 'unsafe-inline' https://accounts.google.com;
+    img-src 'self' data: https: https://accounts.google.com https://*.googleusercontent.com;
+    font-src 'self' https://accounts.google.com;
+    connect-src 'self' https://analytics.umami.is https://accounts.google.com;
+    frame-src 'self' https://accounts.google.com;
     frame-ancestors 'none';
-    form-action 'self';
+    form-action 'self' https://accounts.google.com;
   `.replace(/\s+/g, " ").trim()
 }
 
