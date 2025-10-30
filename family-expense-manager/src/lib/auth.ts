@@ -195,24 +195,35 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account, profile }) {
       if (account?.provider === "google") {
         try {
+          if (!user.email) {
+            console.error("No email provided by Google")
+            return "/auth/error?error=Configuration"
+          }
+
           const existingUser = await prisma.user.findUnique({
-            where: { email: user.email! }
+            where: { email: user.email }
           })
 
           if (existingUser) {
             return true
           } else {
-            await findOrCreateUserByEmail({
-              email: user.email!,
+            const newUser = await findOrCreateUserByEmail({
+              email: user.email,
               name: user.name,
               image: user.image,
               googleId: profile?.sub
             })
+            
+            if (!newUser) {
+              console.error("Failed to create new user")
+              return "/auth/error?error=OAuthCreateAccount"
+            }
+            
             return true
           }
         } catch (error: any) {
           console.error("Google sign-in error:", error.message)
-          return `/auth/error?error=AccessDenied`
+          return "/auth/error?error=OAuthSignin"
         }
       }
 
