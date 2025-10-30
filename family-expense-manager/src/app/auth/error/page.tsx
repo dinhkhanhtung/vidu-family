@@ -6,7 +6,7 @@ import Link from "next/link"
 export default async function AuthError({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined }
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
   const session = await getServerSession(authOptions)
 
@@ -14,7 +14,8 @@ export default async function AuthError({
     redirect("/")
   }
 
-  const error = typeof searchParams.error === "string" ? searchParams.error : "UnknownError"
+  const params = await searchParams
+  const error = typeof params.error === "string" ? params.error : "UnknownError"
 
   const errorMessages: Record<string, string> = {
     Configuration: "Có vấn đề với cấu hình đăng nhập.",
