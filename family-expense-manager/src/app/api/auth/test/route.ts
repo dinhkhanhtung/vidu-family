@@ -4,26 +4,59 @@ import { authOptions } from '../../../../lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const envVars = {
-      NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-      NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? 'SET' : 'NOT_SET',
-      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT_SET',
-      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT_SET'
-    }
+    // Test exact NEXTAUTH_URL value and format
+    const nextAuthUrl = process.env.NEXTAUTH_URL
+    const isUrlFormatValid = nextAuthUrl && !nextAuthUrl.endsWith('/')
 
+    // Test Google OAuth config
+    const googleClientId = process.env.GOOGLE_CLIENT_ID
+    const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET
+    const hasValidGoogleConfig = !!(googleClientId && googleClientSecret)
+    
+    // Mask sensitive data but show format
+    const maskedGoogleId = googleClientId ? 
+      `${googleClientId.substring(0, 6)}...${googleClientId.substring(googleClientId.length - 4)}` : 
+      'NOT_SET'
+
+    // Test auth session
     const session = await getServerSession(authOptions)
+
+    // Get callback URL that should be registered in Google Console
+    const expectedCallback = `${nextAuthUrl}/api/auth/callback/google`
 
     return NextResponse.json({
       status: 'ok',
-      envVars,
-      hasSession: !!session,
-      session: session,
+      urls: {
+        configured: nextAuthUrl,
+        isFormatValid: isUrlFormatValid,
+        expectedCallback: expectedCallback
+      },
+      auth: {
+        hasSecret: !!process.env.NEXTAUTH_SECRET,
+        secretLength: process.env.NEXTAUTH_SECRET?.length || 0,
+        googleClientId: maskedGoogleId,
+        hasValidGoogleConfig
+      },
+      session: {
+        exists: !!session,
+        data: session
+      },
+      checkList: {
+        nextAuthUrl: !!nextAuthUrl && isUrlFormatValid,
+        secret: !!process.env.NEXTAUTH_SECRET,
+        googleId: !!googleClientId,
+        googleSecret: !!googleClientSecret
+      },
       timestamp: new Date().toISOString()
     })
   } catch (error: any) {
     return NextResponse.json({
       status: 'error',
       message: error.message,
+      error: {
+        name: error.name,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       timestamp: new Date().toISOString()
     }, { status: 500 })
   }
