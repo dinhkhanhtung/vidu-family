@@ -254,7 +254,9 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/signin',
-    error: '/auth/error',
+    error: '/api/auth/error',
+    signOut: '/auth/signout',
+    newUser: '/auth/new-user'
   },
   debug: process.env.NODE_ENV === 'development',
   events: {
