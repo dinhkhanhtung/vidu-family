@@ -35,9 +35,9 @@ const securityHeaders = {
     default-src 'self';
     script-src 'self' 'unsafe-inline' 'unsafe-eval' https://analytics.umami.is https://accounts.google.com;
     style-src 'self' 'unsafe-inline' https://accounts.google.com;
-    img-src 'self' data: https: https://accounts.google.com https://*.googleusercontent.com;
-    font-src 'self' https://accounts.google.com;
-    connect-src 'self' https://analytics.umami.is https://accounts.google.com;
+    img-src 'self' blob: data: https: https://*.google.com https://*.googleapis.com https://*.gstatic.com https://*.googleusercontent.com;
+    font-src 'self' https://accounts.google.com https://fonts.gstatic.com;
+    connect-src 'self' https://analytics.umami.is https://accounts.google.com https://*.google.com;
     frame-src 'self' https://accounts.google.com;
     frame-ancestors 'none';
     form-action 'self' https://accounts.google.com;

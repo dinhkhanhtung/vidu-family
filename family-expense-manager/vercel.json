@@ -56,5 +56,22 @@
   },
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "outputDirectory": ".next"
+  "outputDirectory": ".next",
+  "images": {
+    "sizes": [256, 384, 640, 750, 828, 1080, 1200],
+    "domains": ["*.googleusercontent.com", "vercel.app"],
+    "minimumCacheTTL": 60
+  },
+  "git": {
+    "deploymentEnabled": {
+      "master": true
+    }
+  },
+  "github": {
+    "silent": true,
+    "autoAlias": true
+  },
+  "public": false,
+  "cleanUrls": true,
+  "trailingSlash": false
 }
