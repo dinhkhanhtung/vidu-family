@@ -10,14 +10,6 @@ import { sendEmail } from "./email"
 import crypto from "crypto"
 // import { trackEvent } from "./analytics"
 
-// Debug logging for environment variables
-console.log('Auth configuration check:')
-console.log('GOOGLE_CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET')
-console.log('GOOGLE_CLIENT_SECRET:', process.env.GOOGLE_CLIENT_SECRET ? 'SET' : 'NOT SET')
-console.log('NEXTAUTH_SECRET:', process.env.NEXTAUTH_SECRET ? 'SET' : 'NOT SET')
-console.log('NEXTAUTH_URL:', process.env.NEXTAUTH_URL)
-console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'SET' : 'NOT SET')
-
 // Nodemailer transporter
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -201,41 +193,27 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async signIn({ user, account, profile }) {
-      console.log("SignIn attempt:", { provider: account?.provider, email: user.email })
-
       if (account?.provider === "google") {
         try {
-          console.log("Google sign-in finding user:", user.email)
           const existingUser = await prisma.user.findUnique({
             where: { email: user.email! }
           })
 
-          console.log("Existing user found:", !!existingUser)
-
           if (existingUser) {
             return true
           } else {
-            console.log("Creating new user for:", user.email)
             await findOrCreateUserByEmail({
               email: user.email!,
               name: user.name,
               image: user.image,
               googleId: profile?.sub
             })
-            console.log("New user created successfully")
             return true
           }
         } catch (error: any) {
-          console.error("Google sign-in error details:", error)
-          console.error("Error stack:", error.stack)
-          console.error("Database connection check:", process.env.DATABASE_URL ? 'SET' : 'NOT SET')
+          console.error("Google sign-in error:", error.message)
           return `/auth/error?error=AccessDenied`
         }
-      }
-
-      if (account?.provider === "email") {
-        console.log("Email sign-in for:", user.email)
-        return true
       }
 
       return true
@@ -253,10 +231,12 @@ export const authOptions: NextAuthOptions = {
       return token
     },
     async session({ session, token }) {
-      if (token && session.user) {
+      if (token) {
         session.user.id = token.id as string
         session.user.role = token.role as string
-        session.user.familyId = token.familyId as string | null
+        if (token.familyId) {
+          session.user.familyId = token.familyId as string
+        }
       }
       return session
     },
