@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Production optimizations
+  // Vercel deployment optimizations
   output: 'standalone',
-  outputFileTracingRoot: require('path').resolve(__dirname),
   compress: true,
+
+  // Base path for Vercel deployment
+  basePath: '',
+  assetPrefix: '',
 
   // Image optimization
   images: {
