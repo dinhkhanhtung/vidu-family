@@ -1,13 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server"
+import { headers } from "next/headers"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    console.log('NextAuth Log (log):', body)
+    
+    console.log("NextAuth Log:", {
+      body,
+      path: request.nextUrl.pathname,
+      method: request.method,
+      headers: Object.fromEntries(request.headers)
+    })
+    
     return NextResponse.json({ ok: true })
   } catch (error) {
-    console.error('Error in auth log (log):', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error("Error in /api/auth/log:", error)
+    return NextResponse.json({ 
+      error: "Failed to process log request",
+      details: process.env.NODE_ENV === "development" ? String(error) : undefined
+    }, { 
+      status: 400  // Use 400 for client errors (bad JSON), not 500
+    })
   }
 }
 
