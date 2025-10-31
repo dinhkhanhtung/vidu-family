@@ -19,8 +19,9 @@ export const config = {
 
 // Security headers
 const securityHeaders = {
-  // Disable iframes
-  "X-Frame-Options": "DENY",
+  // Allow framing on trusted Vercel surfaces for previews/thumbnails
+  // (Vercel dashboard and *.vercel.app embeddings)
+  "X-Frame-Options": "SAMEORIGIN",
   // XSS protection
   "X-XSS-Protection": "1; mode=block",
   // Disable content type sniffing
@@ -37,7 +38,7 @@ const securityHeaders = {
     img-src 'self' data: https:;
     font-src 'self';
     connect-src 'self' https://analytics.umami.is;
-    frame-ancestors 'none';
+    frame-ancestors 'self' https://vercel.com https://*.vercel.com https://vercel.live https://*.vercel.app;
     form-action 'self';
   `.replace(/\s+/g, " ").trim()
 }
