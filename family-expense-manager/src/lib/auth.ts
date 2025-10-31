@@ -50,8 +50,19 @@ export async function verifyPendingLink(_token: string) {
 }
 
 export const authOptions: NextAuthOptions = {
-  debug: process.env.NODE_ENV === 'development',
+  debug: true, // Enable debug logging temporarily
   adapter: PrismaAdapter(prisma),
+  logger: {
+    error: (code, ...message) => {
+      console.error(code, message)
+    },
+    warn: (code, ...message) => {
+      console.warn(code, message)
+    },
+    debug: (code, ...message) => {
+      console.debug(code, message)
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -117,14 +128,31 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id }
-        })
-        if (dbUser) {
-          token.id = dbUser.id
-          token.role = dbUser.role
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: {
+              id: true,
+              role: true,
+              email: true,
+              name: true,
+              image: true
+            }
+          })
+          if (dbUser) {
+            token.id = dbUser.id
+            token.role = dbUser.role || 'user'
+            token.email = dbUser.email
+            token.name = dbUser.name
+            token.picture = dbUser.image
+          }
+        } catch (error) {
+          console.error('JWT callback error:', error)
+          token.role = 'user'
         }
       }
+      // Ensure required fields exist
+      token.role = token.role || 'user'
       return token
     },
     async session({ session, token }) {
@@ -141,6 +169,17 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60 // 30 days
+  },
+  events: {
+    async signIn({ user, account, profile }) {
+      console.log("Debug: signIn event", { user, account, profile })
+    },
+    async signOut({ session, token }) {
+      console.log("Debug: signOut event", { session, token })
+    },
+    async createUser({ user }) {
+      console.log("Debug: createUser event", { user })
+    }
   },
   secret: process.env.NEXTAUTH_SECRET
 }
