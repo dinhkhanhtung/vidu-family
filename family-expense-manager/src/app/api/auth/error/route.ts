@@ -4,6 +4,17 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const error = searchParams.get("error")
 
+  console.log("Debug: Auth error route accessed", {
+    error,
+    url: request.url,
+    userAgent: request.headers.get("user-agent"),
+    referer: request.headers.get("referer"),
+    hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+    hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
+    hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
+    nodeEnv: process.env.NODE_ENV
+  })
+
   const errorMessages: Record<string, string> = {
     Configuration: "Có vấn đề với cấu hình đăng nhập.",
     AccessDenied: "Truy cập bị từ chối. Vui lòng kiểm tra thông tin đăng nhập.",
