@@ -17,6 +17,14 @@ export default async function AuthError({
   const params = await searchParams
   const error = typeof params.error === "string" ? params.error : "UnknownError"
 
+  console.log("Debug: Auth error page accessed", {
+    error,
+    url: typeof window !== 'undefined' ? window.location.href : 'server-side',
+    searchParams: params,
+    hasSession: !!session,
+    allParams: Object.keys(params)
+  })
+
   const errorMessages: Record<string, string> = {
     Configuration: "Có vấn đề với cấu hình đăng nhập.",
     AccessDenied: "Truy cập bị từ chối. Vui lòng kiểm tra thông tin đăng nhập.",
